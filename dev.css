@@ -1,0 +1,16 @@
+/* ==========================================================================
+   dev.css — PlayBrick entry point
+   Add one @import per component or section you create in bricks/.
+   Import order: base → components → sections
+   ========================================================================== */
+
+/* Base — always first */
+@import './bricks/base/variables.css';
+@import './bricks/base/reset.css';
+@import './bricks/base/global.css';
+
+/* Components — add here */
+/* @import './bricks/components/button.css'; */
+
+/* Sections — add here */
+/* @import './bricks/sections/hero.css'; */
