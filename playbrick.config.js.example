@@ -1,0 +1,11 @@
+// Rename this file to playbrick.config.js and set outDir for your project.
+// playbrick.config.js is ignored by git — it's local to each project.
+
+module.exports = {
+  // Path to where WordPress should serve the built files from.
+  // Relative to this file, or absolute.
+  // Examples:
+  //   '../mysite/wp-content/uploads/assets'
+  //   '/var/www/html/wp-content/uploads/assets'
+  outDir: '../wp-content/uploads/assets'
+};

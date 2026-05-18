@@ -13,9 +13,13 @@ var ROOT    = __dirname;
 var CSS_IN  = path.join(ROOT, 'dev.css');
 var JS_IN   = path.join(ROOT, 'dev.js');
 
-// Output directory: edit this to match your WordPress uploads path
-// Example: path.resolve(ROOT, '../mysite/wp-content/uploads/assets')
+// Load project config (playbrick.config.js) — falls back to dist/
 var OUT_DIR = path.join(ROOT, 'dist');
+var configPath = path.join(ROOT, 'playbrick.config.js');
+if (fs.existsSync(configPath)) {
+  var config = require(configPath);
+  if (config.outDir) OUT_DIR = path.resolve(ROOT, config.outDir);
+}
 
 var CSS_OUT = path.join(OUT_DIR, 'style.min.css');
 var JS_OUT  = path.join(OUT_DIR, 'script.min.js');

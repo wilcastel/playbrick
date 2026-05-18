@@ -2,5 +2,8 @@ node_modules/
 package-lock.json
 dist/
 
+# Project-specific config — not committed (copy from playbrick.config.js.example)
+playbrick.config.js
+
 # User reference materials — not source code
 src/
