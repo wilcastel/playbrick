@@ -11,10 +11,16 @@ module.exports = {
   childTheme: '../wp-content/themes/my-child-theme',
 
   // (Optional) Existing PHP file inside childTheme where the enqueue hook should be appended.
-  // Use this when the theme already has a dedicated enqueue file loaded by functions.php.
-  // If omitted, setup creates includes/playbrick-enqueue.php and patches functions.php.
+  // Use this when the theme already has a dedicated enqueue file already loaded by functions.php.
+  // If omitted, setup creates includes/playbrick-enqueue.php and adds a require_once to functions.php.
   //
-  // Example for snn-brx-child-theme:
+  // Traditional theme (no dedicated enqueue file — setup patches functions.php directly):
+  //   enqueueFile: '',
+  //
+  // snn-brx-child-theme (has its own enqueue file, functions.php must not be touched):
   //   enqueueFile: 'includes/features/enqueue-scripts.php',
+  //
+  // Any theme with a custom enqueue file:
+  //   enqueueFile: 'inc/enqueue.php',
   enqueueFile: '',
 };
