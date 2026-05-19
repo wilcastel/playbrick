@@ -1,11 +1,12 @@
-// Rename this file to playbrick.config.js and set outDir for your project.
-// playbrick.config.js is ignored by git — it's local to each project.
+// Rename this file to playbrick.config.js — it is git-ignored (local to each project).
+// Then run: pnpm run setup
 
 module.exports = {
-  // Path to where WordPress should serve the built files from.
-  // Relative to this file, or absolute.
-  // Examples:
-  //   '../mysite/wp-content/uploads/assets'
-  //   '/var/www/html/wp-content/uploads/assets'
-  outDir: '../wp-content/uploads/assets'
+  // Where the production build is written (relative to this file or absolute).
+  // Must live inside wp-content/uploads/ so WordPress can compute the URL.
+  outDir: '../wp-content/uploads/assets',
+
+  // Path to your child theme (relative to this file or absolute).
+  // Used by `pnpm run setup` to write the enqueue file and patch functions.php.
+  childTheme: '../wp-content/themes/my-child-theme',
 };

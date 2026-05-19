@@ -31,22 +31,33 @@ playbrick/
 ## Quick start
 
 ```bash
-npm install
+# 1 — install dependencies
+pnpm install
+
+# 2 — configure the project (copy the example and fill in the values)
+cp playbrick.config.js.example playbrick.config.js
+
+# 3 — wire up the enqueue in your child theme (run once per project)
+pnpm run setup
 ```
 
-### Develop
+`setup` writes `includes/playbrick-enqueue.php` to your child theme and adds the `require_once` to `functions.php`.
+
+### Dev mode (default)
 Edit files inside `bricks/`. Open the preview HTML in your browser. No build step needed.
+WordPress enqueues `dev.css` and `dev.js` directly — changes are live on every reload.
 
-### Build for production
+### Production
 ```bash
-npm run build       # outputs dist/style.min.css and dist/script.min.js
-npm run watch       # same, but rebuilds on every save
+pnpm run build   # bundles + minifies → outDir/style.min.css + script.min.js
+pnpm run watch   # same, rebuilds on every save
 ```
 
-Set `OUT_DIR` in `build.js` to point to your WordPress uploads folder, e.g.:
-```js
-var OUT_DIR = path.resolve(ROOT, '../mysite/wp-content/uploads/assets');
+Then add this line to `wp-config.php` to switch WordPress to the compiled files:
+```php
+define('PLAYBRICK_ENV', 'prod');
 ```
+Remove it (or set to `'dev'`) to go back to development mode.
 
 ---
 
@@ -221,19 +232,11 @@ Open in the browser and verify visually before moving to Bricks.
 
 ## WordPress enqueue
 
-In your child theme's enqueue file, point to `dev.css` / `dev.js` for development,
-and to the `dist/` files (or your uploads folder) for production.
+Handled automatically by `pnpm run setup` — see Quick start above.
+
+The generated file lives at `{childTheme}/includes/playbrick-enqueue.php`.
+To switch between dev and prod, set (or remove) this constant in `wp-config.php`:
 
 ```php
-// In wp-config.php: define('MYBRICK_ENV', 'prod');  (omit for dev)
-$is_dev = !defined('MYBRICK_ENV') || MYBRICK_ENV === 'dev';
-
-if ($is_dev) {
-  $css_url = get_home_url() . '/playbrick/dev.css';
-  $js_url  = get_home_url() . '/playbrick/dev.js';
-} else {
-  $upload  = wp_upload_dir();
-  $css_url = $upload['baseurl'] . '/assets/style.min.css';
-  $js_url  = $upload['baseurl'] . '/assets/script.min.js';
-}
+define('PLAYBRICK_ENV', 'prod');  // omit or set to 'dev' for development
 ```
