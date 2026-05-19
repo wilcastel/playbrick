@@ -1,18 +1,4 @@
 /* ==========================================================================
-   Global — page-level effects
+   Global — page-level styles shared across all pages.
+   Add styles here only if they apply universally to every page.
    ========================================================================== */
-
-/* Scroll progress bar (injected by dev.js) */
-.scroll-progress {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: linear-gradient(90deg, var(--color-brand) 0%, var(--color-brand-light) 100%);
-  z-index: 9999;
-  transform: scaleX(0);
-  transform-origin: left center;
-  will-change: transform;
-  pointer-events: none;
-}
