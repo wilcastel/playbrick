@@ -24,17 +24,10 @@ if (!config.childTheme) {
 var CHILD_THEME = path.resolve(ROOT, config.childTheme);
 
 // Derive the uploads sub-path from outDir (e.g. "uploads/assets" → "assets").
-var assetsSubdir = 'assets';
-if (config.outDir) {
-  var normalized = config.outDir.replace(/\\/g, '/');
-  var match = normalized.match(/wp-content\/uploads\/(.+?)\/?\s*$/);
-  if (match) {
-    assetsSubdir = match[1];
-  } else {
-    console.warn('Warning: outDir does not look like a wp-content/uploads/* path.');
-    console.warn('         Edit the generated enqueue code manually after setup.');
-  }
-}
+// assetsSubdir = the subfolder appended to wp_upload_dir()['baseurl'] in prod mode.
+// Use config.assetsSubdir to override; otherwise fall back to the last segment of outDir.
+var assetsSubdir = config.assetsSubdir
+  || (config.outDir ? path.basename(config.outDir.replace(/\/?\s*$/, '')) : 'assets');
 
 // ── Enqueue snippet (appended to existing file or written to a new one) ───────
 
