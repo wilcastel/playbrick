@@ -7,6 +7,14 @@ module.exports = {
   outDir: '../wp-content/uploads/assets',
 
   // Path to your child theme (relative to this file or absolute).
-  // Used by `pnpm run setup` to write the enqueue file and patch functions.php.
+  // Used by `pnpm run setup` to wire in the enqueue code.
   childTheme: '../wp-content/themes/my-child-theme',
+
+  // (Optional) Existing PHP file inside childTheme where the enqueue hook should be appended.
+  // Use this when the theme already has a dedicated enqueue file loaded by functions.php.
+  // If omitted, setup creates includes/playbrick-enqueue.php and patches functions.php.
+  //
+  // Example for snn-brx-child-theme:
+  //   enqueueFile: 'includes/features/enqueue-scripts.php',
+  enqueueFile: '',
 };
