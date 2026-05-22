@@ -21,8 +21,9 @@ if (fs.existsSync(configPath)) {
   if (config.outDir) OUT_DIR = path.resolve(ROOT, config.outDir);
 }
 
-var CSS_OUT = path.join(OUT_DIR, 'style.min.css');
-var JS_OUT  = path.join(OUT_DIR, 'script.min.js');
+var CSS_OUT     = path.join(OUT_DIR, 'style.min.css');
+var CSS_DEV_OUT = path.join(ROOT, 'dev.built.css');
+var JS_OUT      = path.join(OUT_DIR, 'script.min.js');
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -44,8 +45,9 @@ function buildCSS() {
     .then(function (result) {
       ensureDir(OUT_DIR);
       fs.writeFileSync(CSS_OUT, result.css);
+      fs.writeFileSync(CSS_DEV_OUT, result.css);
       var kb = (Buffer.byteLength(result.css, 'utf8') / 1024).toFixed(1);
-      console.log('[' + stamp() + '] CSS  →  style.min.css  (' + kb + ' kB)');
+      console.log('[' + stamp() + '] CSS  →  style.min.css + dev.built.css  (' + kb + ' kB)');
     });
 }
 

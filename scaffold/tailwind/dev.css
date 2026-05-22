@@ -3,14 +3,13 @@
    Tailwind v4 utilities + your component/section CSS.
    ========================================================================== */
 
-/* Tailwind v4 — utilities generated from scanned sources */
-@import "tailwindcss";
+/* Tailwind v4 — utilities generated from scanned sources.
+   `important` ensures utilities override Bricks Builder's element styles. */
+@import "tailwindcss" important;
 
-/* Content sources for production build scanning.
-   Paths are relative to this file (playground root).
-   Bricks DB-stored classes are NOT scanned — maintain a safelist if needed. */
-@source "../../**/*.php";
-@source "../../**/*.html";
+/* Tailwind scans src/ for used utility classes.
+   Add more @source lines if you reference classes from JS or other files. */
+@source "./src/**/*.html";
 
 /* Base — always first */
 @import './bricks/base/variables.css';

@@ -21,6 +21,8 @@ function playbrick_settings_page() {
   $scaffold_mode   = playbrick_scaffold_mode( $settings );
   $playground_path = $settings['playground_path'] ?? (ABSPATH . 'playground');
   $out_dir         = $settings['out_dir']         ?? (wp_upload_dir()['basedir'] . '/assets');
+  $child_theme     = $settings['child_theme']     ?? '';
+  $enqueue_file    = $settings['enqueue_file']    ?? '';
 
   $saved   = isset($_GET['saved']);
   $config  = isset($_GET['config']);
@@ -76,6 +78,22 @@ function playbrick_settings_page() {
           <td>
             <input type="text" name="playbrick_out_dir" value="<?php echo esc_attr($out_dir); ?>" class="large-text" />
             <p class="description">Where <code>npm run build</code> puts the minified files. Default: <code><?php echo esc_html(wp_upload_dir()['basedir'] . '/assets'); ?></code></p>
+          </td>
+        </tr>
+
+        <tr>
+          <th scope="row"><label>Child theme path</label></th>
+          <td>
+            <input type="text" name="playbrick_child_theme" value="<?php echo esc_attr($child_theme); ?>" class="large-text" />
+            <p class="description">Absolute path to your child theme. Used by <code>pnpm run setup</code> to wire the enqueue hook. Example: <code><?php echo esc_html(WP_CONTENT_DIR . '/themes/my-child-theme'); ?></code></p>
+          </td>
+        </tr>
+
+        <tr>
+          <th scope="row"><label>Enqueue file</label></th>
+          <td>
+            <input type="text" name="playbrick_enqueue_file" value="<?php echo esc_attr($enqueue_file); ?>" class="large-text" />
+            <p class="description">PHP file inside the child theme where the hook is appended. Leave empty to patch <code>functions.php</code>. For snn-brx-child-theme: <code>includes/features/enqueue-scripts.php</code></p>
           </td>
         </tr>
 
@@ -136,8 +154,16 @@ function playbrick_generate_config() {
   $playground_path = $settings['playground_path'] ?? (ABSPATH . 'playground');
   $out_dir         = $settings['out_dir']         ?? (wp_upload_dir()['basedir'] . '/assets');
   $mode            = playbrick_scaffold_mode( $settings );
+  $child_theme     = $settings['child_theme']     ?? '';
+  $enqueue_file    = $settings['enqueue_file']    ?? '';
 
-  $content = "module.exports = {\n  outDir: " . json_encode($out_dir) . ",\n  mode: " . json_encode($mode) . "\n};\n";
+  $content = "// Local config — git-ignored. Edit values then run: pnpm run setup\n"
+           . "module.exports = {\n"
+           . "  outDir:      " . json_encode($out_dir)     . ",\n"
+           . "  mode:        " . json_encode($mode)        . ",\n"
+           . "  childTheme:  " . json_encode($child_theme) . ",\n"
+           . "  enqueueFile: " . json_encode($enqueue_file) . ",\n"
+           . "};\n";
   file_put_contents($playground_path . '/playbrick.config.js', $content);
 
   wp_redirect(admin_url('options-general.php?page=playbrick&config=1'));

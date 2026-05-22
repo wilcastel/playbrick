@@ -12,10 +12,17 @@ function playbrick_enqueue_assets() {
 
   if ($env === 'dev') {
     $playground_url = playbrick_path_to_url($playground_path);
-    $css_path       = $playground_path . '/dev.css';
     $js_path        = $playground_path . '/dev.js';
-    $css_url        = $playground_url . '/dev.css';
     $js_url         = $playground_url . '/dev.js';
+    // Tailwind mode: serve compiled dev.built.css (requires pnpm run watch)
+    // Classic mode: serve raw dev.css
+    if ( $mode === 'tailwind' ) {
+      $css_path = $playground_path . '/dev.built.css';
+      $css_url  = $playground_url . '/dev.built.css';
+    } else {
+      $css_path = $playground_path . '/dev.css';
+      $css_url  = $playground_url . '/dev.css';
+    }
   } else {
     $upload   = wp_upload_dir();
     $css_path = $out_dir . '/style.min.css';
@@ -39,10 +46,6 @@ function playbrick_enqueue_assets() {
     true
   );
 
-  // Tailwind v4 CDN — dev + tailwind mode only, placed in <head> (not footer)
-  if ( $env === 'dev' && $mode === 'tailwind' ) {
-    wp_enqueue_script( 'tailwindcss-cdn', 'https://unpkg.com/@tailwindcss/browser@4', [], null, false );
-  }
 }
 
 function playbrick_path_to_url($path) {
