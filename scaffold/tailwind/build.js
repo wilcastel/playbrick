@@ -5,7 +5,6 @@
 var path        = require('path');
 var fs          = require('fs');
 var postcss     = require('postcss');
-var atImport    = require('postcss-import');
 var tailwindcss = require('@tailwindcss/postcss');
 var cssnano     = require('cssnano');
 var terser      = require('terser');
@@ -40,7 +39,7 @@ function stamp() {
 function buildCSS() {
   var src = fs.readFileSync(CSS_IN, 'utf8');
 
-  return postcss([atImport(), tailwindcss(), cssnano({ preset: 'default' })])
+  return postcss([tailwindcss(), cssnano({ preset: 'default' })])
     .process(src, { from: CSS_IN, to: CSS_OUT })
     .then(function (result) {
       ensureDir(OUT_DIR);
