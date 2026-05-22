@@ -6,6 +6,7 @@ add_action('wp_enqueue_scripts', 'playbrick_enqueue_assets');
 function playbrick_enqueue_assets() {
   $settings        = get_option('playbrick_settings', []);
   $env             = $settings['env'] ?? 'dev';
+  $mode            = playbrick_scaffold_mode( $settings );
   $playground_path = $settings['playground_path'] ?? (ABSPATH . 'playground');
   $out_dir         = $settings['out_dir'] ?? (wp_upload_dir()['basedir'] . '/assets');
 
@@ -37,6 +38,11 @@ function playbrick_enqueue_assets() {
     file_exists($js_path) ? filemtime($js_path) : PLAYBRICK_VERSION,
     true
   );
+
+  // Tailwind v4 CDN — dev + tailwind mode only, placed in <head> (not footer)
+  if ( $env === 'dev' && $mode === 'tailwind' ) {
+    wp_enqueue_script( 'tailwindcss-cdn', 'https://unpkg.com/@tailwindcss/browser@4', [], null, false );
+  }
 }
 
 function playbrick_path_to_url($path) {

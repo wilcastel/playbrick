@@ -1,21 +1,30 @@
 <?php
 defined('ABSPATH') || exit;
 
+function playbrick_scaffold_mode( $settings = null ) {
+  if ( $settings === null ) $settings = get_option( 'playbrick_settings', [] );
+  $mode = $settings['scaffold_mode'] ?? 'classic';
+  return in_array( $mode, [ 'classic', 'tailwind' ], true ) ? $mode : 'classic';
+}
+
 function playbrick_create_scaffold() {
   $settings        = get_option('playbrick_settings', []);
   $playground_path = $settings['playground_path'] ?? (ABSPATH . 'playground');
-  $scaffold_dir    = PLAYBRICK_DIR . 'scaffold';
+  $mode            = playbrick_scaffold_mode( $settings );
+  $scaffold_dir    = PLAYBRICK_DIR . 'scaffold/' . $mode;
 
   if (!is_dir($scaffold_dir)) return;
 
   playbrick_copy_dir($scaffold_dir, $playground_path);
 
-  // Rename playbrick.config.js.example → playbrick.config.js if config doesn't exist yet
-  $config_example = $playground_path . '/playbrick.config.js.example';
-  $config_file    = $playground_path . '/playbrick.config.js';
-  if (file_exists($config_example) && !file_exists($config_file)) {
+  // Write playbrick.config.js if it doesn't exist yet — embed mode so build.js knows which pipeline to use
+  $config_file = $playground_path . '/playbrick.config.js';
+  if ( !file_exists($config_file) ) {
     $out_dir = $settings['out_dir'] ?? (wp_upload_dir()['basedir'] . '/assets');
-    $content = "module.exports = {\n  outDir: " . json_encode($out_dir) . "\n};\n";
+    $content = "module.exports = {\n"
+             . "  outDir: " . json_encode($out_dir) . ",\n"
+             . "  mode: "   . json_encode($mode)    . "\n"
+             . "};\n";
     file_put_contents($config_file, $content);
   }
 }

@@ -18,6 +18,7 @@ function playbrick_admin_menu() {
 function playbrick_settings_page() {
   $settings        = get_option('playbrick_settings', []);
   $env             = $settings['env']             ?? 'dev';
+  $scaffold_mode   = playbrick_scaffold_mode( $settings );
   $playground_path = $settings['playground_path'] ?? (ABSPATH . 'playground');
   $out_dir         = $settings['out_dir']         ?? (wp_upload_dir()['basedir'] . '/assets');
 
@@ -47,6 +48,18 @@ function playbrick_settings_page() {
               <option value="dev"  <?php selected($env, 'dev');  ?>>Development — serves dev.css / dev.js</option>
               <option value="prod" <?php selected($env, 'prod'); ?>>Production  — serves style.min.css / script.min.js</option>
             </select>
+          </td>
+        </tr>
+
+        <tr>
+          <th scope="row"><label>Scaffold mode</label></th>
+          <td>
+            <select name="playbrick_scaffold_mode">
+              <option value="classic"  <?php selected($scaffold_mode, 'classic');  ?>>Classic — plain CSS/JS (PostCSS + Terser)</option>
+              <option value="tailwind" <?php selected($scaffold_mode, 'tailwind'); ?>>Tailwind CSS v4 — utility-first with CDN in dev</option>
+            </select>
+            <p class="description" style="color:#d63638;">Changing mode only affects new scaffold generation — existing files are never overwritten.</p>
+            <p class="description">Tailwind mode: classes stored in Bricks Builder (database) may not be detected during production builds. Add a safelist in <code>dev.css</code> if needed.</p>
           </td>
         </tr>
 
@@ -97,10 +110,18 @@ function playbrick_save_settings() {
   check_admin_referer('playbrick_settings');
   if (!current_user_can('manage_options')) wp_die('Unauthorized');
 
+  $current       = get_option( 'playbrick_settings', [] );
+  $allowed_modes = [ 'classic', 'tailwind' ];
+  $new_mode      = sanitize_text_field( $_POST['playbrick_scaffold_mode'] ?? '' );
+  $scaffold_mode = in_array( $new_mode, $allowed_modes, true ) ? $new_mode : ( $current['scaffold_mode'] ?? 'classic' );
+
   update_option('playbrick_settings', [
     'env'             => sanitize_text_field($_POST['playbrick_env'] ?? 'dev'),
+    'scaffold_mode'   => $scaffold_mode,
     'playground_path' => untrailingslashit(sanitize_text_field($_POST['playbrick_playground_path'] ?? '')),
     'out_dir'         => untrailingslashit(sanitize_text_field($_POST['playbrick_out_dir'] ?? '')),
+    'child_theme'     => untrailingslashit(sanitize_text_field($_POST['playbrick_child_theme'] ?? ($current['child_theme'] ?? ''))),
+    'enqueue_file'    => sanitize_text_field($_POST['playbrick_enqueue_file'] ?? ($current['enqueue_file'] ?? '')),
   ]);
 
   wp_redirect(admin_url('options-general.php?page=playbrick&saved=1'));
@@ -114,8 +135,9 @@ function playbrick_generate_config() {
   $settings        = get_option('playbrick_settings', []);
   $playground_path = $settings['playground_path'] ?? (ABSPATH . 'playground');
   $out_dir         = $settings['out_dir']         ?? (wp_upload_dir()['basedir'] . '/assets');
+  $mode            = playbrick_scaffold_mode( $settings );
 
-  $content = "module.exports = {\n  outDir: " . json_encode($out_dir) . "\n};\n";
+  $content = "module.exports = {\n  outDir: " . json_encode($out_dir) . ",\n  mode: " . json_encode($mode) . "\n};\n";
   file_put_contents($playground_path . '/playbrick.config.js', $content);
 
   wp_redirect(admin_url('options-general.php?page=playbrick&config=1'));

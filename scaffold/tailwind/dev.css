@@ -1,0 +1,24 @@
+/* ==========================================================================
+   dev.css — PlayBrick entry point (Tailwind CSS v4 mode)
+   Tailwind v4 utilities + your component/section CSS.
+   ========================================================================== */
+
+/* Tailwind v4 — utilities generated from scanned sources */
+@import "tailwindcss";
+
+/* Content sources for production build scanning.
+   Paths are relative to this file (playground root).
+   Bricks DB-stored classes are NOT scanned — maintain a safelist if needed. */
+@source "../../**/*.php";
+@source "../../**/*.html";
+
+/* Base — always first */
+@import './bricks/base/variables.css';
+@import './bricks/base/reset.css';
+@import './bricks/base/global.css';
+
+/* Components — add here */
+/* @import './bricks/components/button.css'; */
+
+/* Sections — add here */
+/* @import './bricks/sections/hero.css'; */

@@ -26,6 +26,7 @@ function playbrick_activate() {
     $upload = wp_upload_dir();
     update_option('playbrick_settings', [
       'env'             => 'dev',
+      'scaffold_mode'   => 'classic',
       'playground_path' => ABSPATH . 'playground',
       'out_dir'         => $upload['basedir'] . '/assets',
     ]);

@@ -1,0 +1,18 @@
+{
+  "name": "playbrick",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "setup": "node setup.js",
+    "build": "node build.js",
+    "watch": "node build.js --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
+    "chokidar": "^3.6.0",
+    "cssnano": "^7.0.6",
+    "postcss": "^8.5.3",
+    "postcss-import": "^16.1.0",
+    "terser": "^5.39.0"
+  }
+}
