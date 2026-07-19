@@ -4,7 +4,12 @@ defined('ABSPATH') || exit;
 add_action('wp_enqueue_scripts', 'playbrick_enqueue_assets');
 
 function playbrick_enqueue_assets() {
-  $settings        = get_option('playbrick_settings', []);
+  $settings = get_option('playbrick_settings', []);
+
+  if ( playbrick_is_child_theme_strategy( $settings ) ) {
+    return;
+  }
+
   $env             = $settings['env'] ?? 'dev';
   $mode            = playbrick_scaffold_mode( $settings );
   $playground_path = $settings['playground_path'] ?? (ABSPATH . 'playground');
@@ -46,11 +51,4 @@ function playbrick_enqueue_assets() {
     true
   );
 
-}
-
-function playbrick_path_to_url($path) {
-  $abspath = untrailingslashit(ABSPATH);
-  $home    = untrailingslashit(get_home_url());
-  $path    = untrailingslashit($path);
-  return str_replace($abspath, $home, $path);
 }

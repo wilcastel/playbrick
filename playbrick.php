@@ -14,6 +14,7 @@ define('PLAYBRICK_VERSION', '1.0.0');
 define('PLAYBRICK_DIR',     plugin_dir_path(__FILE__));
 define('PLAYBRICK_URL',     plugin_dir_url(__FILE__));
 
+require_once PLAYBRICK_DIR . 'includes/enqueue-strategy.php';
 require_once PLAYBRICK_DIR . 'includes/scaffold.php';
 require_once PLAYBRICK_DIR . 'includes/enqueue.php';
 require_once PLAYBRICK_DIR . 'includes/admin.php';
@@ -25,10 +26,11 @@ function playbrick_activate() {
   if (!get_option('playbrick_settings')) {
     $upload = wp_upload_dir();
     update_option('playbrick_settings', [
-      'env'             => 'dev',
-      'scaffold_mode'   => 'classic',
-      'playground_path' => ABSPATH . 'playground',
-      'out_dir'         => $upload['basedir'] . '/assets',
+      'env'              => 'dev',
+      'scaffold_mode'    => 'classic',
+      'playground_path'  => ABSPATH . 'playground',
+      'out_dir'          => $upload['basedir'] . '/assets',
+      'enqueue_strategy' => 'plugin',
     ]);
   }
   playbrick_create_scaffold();

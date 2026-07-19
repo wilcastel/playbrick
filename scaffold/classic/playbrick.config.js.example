@@ -1,31 +1,16 @@
 // Rename this file to playbrick.config.js — it is git-ignored (local to each project).
-// Then run: pnpm run setup
+// The plugin reads this file when you run the build from the playground.
 
 module.exports = {
+  // Scaffold mode this playground was generated for. Keep in sync with the
+  // PlayBrick admin setting.
+  mode: 'classic',
+
   // Where the production build is written (relative to this file or absolute).
   // Must live inside wp-content/uploads/ so WordPress can compute the URL.
   outDir: '../wp-content/uploads/assets',
 
-  // Path to your child theme (relative to this file or absolute).
-  // Used by `pnpm run setup` to wire in the enqueue code.
-  childTheme: '../wp-content/themes/my-child-theme',
-
-  // (Optional) Override the subfolder appended to wp_upload_dir()['baseurl'] in prod mode.
-  // By default it's derived from the last segment of outDir (e.g. 'assets').
-  // Set this only if auto-detection gives the wrong result.
-  //   assetsSubdir: 'assets',
-
-  // (Optional) Existing PHP file inside childTheme where the enqueue hook should be appended.
-  // Use this when the theme already has a dedicated enqueue file already loaded by functions.php.
-  // If omitted, setup creates includes/playbrick-enqueue.php and adds a require_once to functions.php.
-  //
-  // Traditional theme (no dedicated enqueue file — setup patches functions.php directly):
-  //   enqueueFile: '',
-  //
-  // snn-brx-child-theme (has its own enqueue file, functions.php must not be touched):
-  //   enqueueFile: 'includes/features/enqueue-scripts.php',
-  //
-  // Any theme with a custom enqueue file:
-  //   enqueueFile: 'inc/enqueue.php',
-  enqueueFile: '',
+  // Who enqueues the assets. Use 'plugin' for the default plugin-managed
+  // enqueue, or 'child_theme' when the active child theme will enqueue them.
+  enqueueStrategy: 'plugin',
 };

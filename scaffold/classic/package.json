@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "setup": "node setup.js",
     "build": "node build.js",
     "watch": "node build.js --watch"
   },

@@ -21,9 +21,11 @@ function playbrick_create_scaffold() {
   $config_file = $playground_path . '/playbrick.config.js';
   if ( !file_exists($config_file) ) {
     $out_dir = $settings['out_dir'] ?? (wp_upload_dir()['basedir'] . '/assets');
+    $enqueue_strategy = $settings['enqueue_strategy'] ?? 'plugin';
     $content = "module.exports = {\n"
-             . "  outDir: " . json_encode($out_dir) . ",\n"
-             . "  mode: "   . json_encode($mode)    . "\n"
+             . "  outDir:          " . json_encode($out_dir)         . ",\n"
+             . "  mode:            " . json_encode($mode)            . ",\n"
+             . "  enqueueStrategy: " . json_encode($enqueue_strategy) . "\n"
              . "};\n";
     file_put_contents($config_file, $content);
   }
