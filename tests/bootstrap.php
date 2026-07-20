@@ -28,6 +28,17 @@ if ( ! defined( 'PLAYBRICK_URL' ) ) {
 // Minimal WordPress helpers required to load plugin files without a full WP install.
 if ( ! function_exists( 'add_action' ) ) {
 	function add_action( $tag, $callback, $priority = 10, $accepted_args = 1 ) {
+		$GLOBALS['wp_filter'][ $tag ][ $callback ] = $priority;
+	}
+}
+
+if ( ! function_exists( 'has_action' ) ) {
+	function has_action( $tag, $callback = false ) {
+		if ( $callback === false ) {
+			return ! empty( $GLOBALS['wp_filter'][ $tag ] );
+		}
+
+		return $GLOBALS['wp_filter'][ $tag ][ $callback ] ?? false;
 	}
 }
 

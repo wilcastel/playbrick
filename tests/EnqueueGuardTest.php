@@ -38,4 +38,8 @@ class EnqueueGuardTest extends TestCase {
 
 		$this->assertTrue( true );
 	}
+
+	public function test_plugin_enqueue_runs_late_enough_to_override_theme_styles(): void {
+		$this->assertSame( 9999, has_action( 'wp_enqueue_scripts', 'playbrick_enqueue_assets' ) );
+	}
 }

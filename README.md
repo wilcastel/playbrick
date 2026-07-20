@@ -65,6 +65,7 @@ Reference files in `src/` are not included in the production build. Author Brick
 ### Build commands (run from `playground/`)
 
 ```bash
+corepack enable     # if pnpm is not available in this shell
 pnpm install        # first time only
 pnpm run build      # bundle + minify → output directory
 pnpm run watch      # auto-rebuild on save
@@ -90,7 +91,7 @@ Some projects — such as those using `snn-brx-child-theme` — need the child t
 4. Click **Generate child-theme enqueue**. PlayBrick writes the enqueue hook into the selected file.
 5. While **Child theme** is selected, the plugin will not enqueue any assets, so there is no double enqueue.
 
-To switch back to plugin-managed enqueue, change **Enqueue strategy** to `Plugin` and save. If a legacy `includes/playbrick-enqueue.php` file from an old `pnpm run setup` run is still present, the settings page will warn you so you can remove it.
+To switch back to plugin-managed enqueue, change **Enqueue strategy** to `Plugin` and save. If a legacy `includes/playbrick-enqueue.php` file from an old setup run is still present, the settings page will warn you so you can remove it.
 
 ---
 

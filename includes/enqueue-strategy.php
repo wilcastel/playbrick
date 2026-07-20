@@ -129,7 +129,7 @@ add_action( 'wp_enqueue_scripts', function () {
 		file_exists( $js_path ) ? filemtime( $js_path ) : $fallback_version,
 		true
 	);
-} );
+}, 9999 );
 PHP;
 }
 

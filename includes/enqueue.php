@@ -1,7 +1,7 @@
 <?php
 defined('ABSPATH') || exit;
 
-add_action('wp_enqueue_scripts', 'playbrick_enqueue_assets');
+add_action('wp_enqueue_scripts', 'playbrick_enqueue_assets', 9999);
 
 function playbrick_enqueue_assets() {
   $settings = get_option('playbrick_settings', []);

@@ -5,6 +5,7 @@ add_action('admin_menu', 'playbrick_admin_menu');
 add_action('admin_post_playbrick_save_settings', 'playbrick_save_settings');
 add_action('admin_post_playbrick_generate_config', 'playbrick_generate_config');
 add_action('admin_post_playbrick_generate_child_theme_enqueue', 'playbrick_generate_child_theme_enqueue');
+add_action('admin_post_playbrick_repair_scaffold', 'playbrick_repair_scaffold_handler');
 
 function playbrick_admin_menu() {
   add_options_page(
@@ -25,10 +26,12 @@ function playbrick_settings_page() {
   $enqueue_strategy = playbrick_get_enqueue_strategy( $settings );
   $child_theme      = $settings['child_theme']      ?? '';
   $enqueue_file     = $settings['enqueue_file']     ?? '';
+  $scaffold_status  = playbrick_scaffold_status( $settings );
 
   $saved     = isset($_GET['saved']);
   $config    = isset($_GET['config']);
   $generated = isset($_GET['child_theme_generated']);
+  $repaired  = isset($_GET['scaffold_repaired']);
   $error     = $_GET['error'] ?? '';
 
   $child_theme_fields_class = $enqueue_strategy === 'child_theme' ? '' : 'hidden';
@@ -53,6 +56,9 @@ function playbrick_settings_page() {
     <?php if ($generated): ?>
       <div class="notice notice-success is-dismissible"><p>Child-theme enqueue file generated.</p></div>
     <?php endif; ?>
+    <?php if ($repaired): ?>
+      <div class="notice notice-success is-dismissible"><p>Playground scaffold repaired for the selected mode.</p></div>
+    <?php endif; ?>
 
     <?php if ($error === 'child_theme_fields'): ?>
       <div class="notice notice-error is-dismissible"><p>Child theme path and Enqueue file are required when the <strong>Child theme</strong> strategy is selected.</p></div>
@@ -68,9 +74,23 @@ function playbrick_settings_page() {
       <div class="notice notice-error is-dismissible"><p>Enqueue file not found inside the child theme.</p></div>
     <?php elseif ($error === 'child_theme_file_forbidden'): ?>
       <div class="notice notice-error is-dismissible"><p>Enqueue file must stay inside the configured child theme.</p></div>
+    <?php elseif ($error === 'scaffold_repair_failed'): ?>
+      <div class="notice notice-error is-dismissible"><p>Could not repair the playground scaffold. Check that the selected scaffold mode exists in the plugin.</p></div>
     <?php endif; ?>
 
     <?php echo $legacy_file_warning; ?>
+
+    <?php if (!$scaffold_status['matches']): ?>
+      <div class="notice notice-warning">
+        <p><strong>Playground scaffold mismatch:</strong> settings expect <code><?php echo esc_html($scaffold_status['expected']); ?></code>, but the playground looks like <code><?php echo esc_html($scaffold_status['actual']); ?></code>.</p>
+        <p>Repairing overwrites only scaffold infrastructure files (<code>build.js</code>, <code>dev.css</code>, <code>dev.js</code>, <code>package.json</code>, and <code>playbrick.config.js.example</code>). Your <code>bricks/</code> components, sections, and <code>playbrick.config.js</code> are preserved.</p>
+        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
+          <?php wp_nonce_field('playbrick_repair_scaffold'); ?>
+          <input type="hidden" name="action" value="playbrick_repair_scaffold" />
+          <?php submit_button('Repair playground scaffold', 'secondary', 'submit', false); ?>
+        </form>
+      </div>
+    <?php endif; ?>
 
     <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
       <?php wp_nonce_field('playbrick_settings'); ?>
@@ -95,7 +115,7 @@ function playbrick_settings_page() {
               <option value="classic"  <?php selected($scaffold_mode, 'classic');  ?>>Classic — plain CSS/JS (PostCSS + Terser)</option>
               <option value="tailwind" <?php selected($scaffold_mode, 'tailwind'); ?>>Tailwind CSS v4 — utility-first with CDN in dev</option>
             </select>
-            <p class="description" style="color:#d63638;">Changing mode only affects new scaffold generation — existing files are never overwritten.</p>
+            <p class="description" style="color:#d63638;">Changing mode does not rewrite your existing playground automatically. If files do not match the selected mode, PlayBrick will offer a safe repair.</p>
             <p class="description">Tailwind mode: classes stored in Bricks Builder (database) may not be detected during production builds. Add a safelist in <code>dev.css</code> if needed.</p>
           </td>
         </tr>
@@ -112,7 +132,7 @@ function playbrick_settings_page() {
           <th scope="row"><label>Output directory</label></th>
           <td>
             <input type="text" name="playbrick_out_dir" value="<?php echo esc_attr($out_dir); ?>" class="large-text" />
-            <p class="description">Where <code>npm run build</code> puts the minified files. Default: <code><?php echo esc_html(wp_upload_dir()['basedir'] . '/assets'); ?></code></p>
+            <p class="description">Where <code>pnpm run build</code> puts the minified files. Default: <code><?php echo esc_html(wp_upload_dir()['basedir'] . '/assets'); ?></code></p>
           </td>
         </tr>
 
@@ -178,6 +198,7 @@ function playbrick_settings_page() {
     <pre style="background:#f0f0f1;padding:12px;display:inline-block;">
 cd <?php echo esc_html($playground_path); ?>
 
+corepack enable      # if pnpm is not available in this shell
 pnpm install          # first time only
 pnpm run build        # generate production assets
 pnpm run watch        # auto-rebuild on save</pre>
@@ -337,5 +358,18 @@ function playbrick_generate_child_theme_enqueue() {
   }
 
   wp_redirect(admin_url('options-general.php?page=playbrick&child_theme_generated=1'));
+  exit;
+}
+
+function playbrick_repair_scaffold_handler() {
+  check_admin_referer('playbrick_repair_scaffold');
+  if (!current_user_can('manage_options')) wp_die('Unauthorized');
+
+  if (!playbrick_repair_scaffold()) {
+    wp_redirect(admin_url('options-general.php?page=playbrick&error=scaffold_repair_failed'));
+    exit;
+  }
+
+  wp_redirect(admin_url('options-general.php?page=playbrick&scaffold_repaired=1'));
   exit;
 }

@@ -79,6 +79,7 @@ class ChildThemeGenerationTest extends TestCase {
 		$contents = file_get_contents( $enqueue_file );
 		$this->assertStringContainsString( 'PlayBrick child-theme enqueue snippet', $contents );
 		$this->assertStringContainsString( "add_action( 'wp_enqueue_scripts',", $contents );
+		$this->assertStringContainsString( '}, 9999 );', $contents );
 		$this->assertStringContainsString( "( \$settings['enqueue_strategy'] ?? 'plugin' ) !== 'child_theme'", $contents );
 		$this->assertStringContainsString( "function_exists( 'playbrick_path_to_url' )", $contents );
 		$this->assertStringContainsString( "filemtime( \$css_path )", $contents );
