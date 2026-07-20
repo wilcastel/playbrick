@@ -14,9 +14,11 @@ function playbrick_builder_panel_output() {
 	if (!playbrick_is_bricks_builder_request()) return;
 	?>
 	<style id="playbrick-builder-panel-styles">
-		#playbrick-css-panel{position:fixed;left:320px;right:320px;bottom:0;height:300px;z-index:1000;background:#151b22;border-top:1px solid rgba(255,255,255,.12);box-shadow:0 -16px 40px rgba(0,0,0,.35);color:#d6deeb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;flex-direction:column}
+		#playbrick-css-panel{position:fixed;left:320px;right:320px;bottom:0;height:300px;min-height:180px;max-height:80vh;z-index:1000;background:#151b22;border-top:1px solid rgba(255,255,255,.12);box-shadow:0 -16px 40px rgba(0,0,0,.35);color:#d6deeb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;flex-direction:column}
 		#playbrick-css-panel.playbrick-hidden{display:none!important}
 		#playbrick-css-panel *{box-sizing:border-box}
+		#playbrick-css-resize{position:absolute;left:0;right:0;top:-5px;height:10px;cursor:ns-resize;z-index:1}
+		#playbrick-css-resize:after{content:"";position:absolute;left:50%;top:3px;width:44px;height:3px;margin-left:-22px;border-radius:999px;background:rgba(255,255,255,.22)}
 		#playbrick-css-topbar{height:34px;display:flex;align-items:center;gap:10px;padding:0 10px;border-bottom:1px solid rgba(255,255,255,.08);background:#111820;font-size:12px}
 		#playbrick-css-title{font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 		#playbrick-css-status{margin-left:auto;color:#8a99a8;font-size:11px}
@@ -48,6 +50,8 @@ function playbrick_builder_panel_output() {
 			</span>
 			<button type="button" class="playbrick-css-btn" id="playbrick-css-copy">Copy generated</button>
 			<button type="button" class="playbrick-css-btn is-primary" id="playbrick-css-apply-visual">Apply to visual</button>
+			<button type="button" class="playbrick-css-btn" id="playbrick-css-smaller">Smaller</button>
+			<button type="button" class="playbrick-css-btn" id="playbrick-css-bigger">Bigger</button>
 			<button type="button" class="playbrick-css-btn" id="playbrick-css-refresh">Refresh</button>
 			<button type="button" class="playbrick-css-btn" id="playbrick-css-close">Close</button>
 			<span id="playbrick-css-status">Select a Bricks global class</span>
@@ -64,6 +68,7 @@ function playbrick_builder_panel_output() {
 			</div>
 		</div>
 		<div id="playbrick-css-empty">Select a global class in Bricks to inspect and edit its CSS.</div>
+		<div id="playbrick-css-resize" title="Drag to resize"></div>
 	</div>
 	<script id="playbrick-builder-panel-script">
 	(function(){
@@ -77,8 +82,11 @@ function playbrick_builder_panel_output() {
 		var custom=document.getElementById('playbrick-custom-css');
 		var copyBtn=document.getElementById('playbrick-css-copy');
 		var applyVisualBtn=document.getElementById('playbrick-css-apply-visual');
+		var smallerBtn=document.getElementById('playbrick-css-smaller');
+		var biggerBtn=document.getElementById('playbrick-css-bigger');
 		var closeBtn=document.getElementById('playbrick-css-close');
 		var refreshBtn=document.getElementById('playbrick-css-refresh');
+		var resizeHandle=document.getElementById('playbrick-css-resize');
 		var supportedCount=document.getElementById('playbrick-supported-count');
 		var unsupportedCount=document.getElementById('playbrick-unsupported-count');
 		var unsupportedEl=document.getElementById('playbrick-unsupported');
@@ -88,6 +96,15 @@ function playbrick_builder_panel_output() {
 		var isEditing=false;
 
 		if(!panel||!generated||!custom) return;
+
+		function clamp(value,min,max){return Math.max(min,Math.min(max,value));}
+		function panelMaxHeight(){return Math.max(240,Math.floor(window.innerHeight*0.8));}
+		function setPanelHeight(value){
+			var height=clamp(parseInt(value,10)||300,180,panelMaxHeight());
+			panel.style.height=height+'px';
+			try{window.localStorage.setItem('playbrickCssPanelHeight',String(height));}catch(e){}
+		}
+		try{setPanelHeight(window.localStorage.getItem('playbrickCssPanelHeight')||300);}catch(e){setPanelHeight(300);}
 
 		function getState(){
 			try{var app=document.querySelector('[data-v-app]');return app&&app.__vue_app__&&app.__vue_app__.config.globalProperties.$_state||null;}catch(e){return null;}
@@ -335,6 +352,7 @@ function playbrick_builder_panel_output() {
 			var selector=selectorFor(cls);
 			var decls=[];
 			var preserved=[];
+			var fallbackBlocks=[];
 			var foundBlock=false;
 			var re=/([^{}]+)\{([^{}]*)\}/g;
 			var match;
@@ -346,9 +364,12 @@ function playbrick_builder_panel_output() {
 				if(selectors.indexOf(selector)!==-1||selectors.indexOf('%root%')!==-1){
 					decls=decls.concat(parseDeclarations(body));
 				}else{
-					preserved.push(rawSelector+' {\n'+indent(body.split(';').map(function(line){return line.trim();}).filter(Boolean).map(function(line){return /;$/.test(line)?line:line+';';}))+'\n}');
+					var blockCss=rawSelector+' {\n'+indent(body.split(';').map(function(line){return line.trim();}).filter(Boolean).map(function(line){return /;$/.test(line)?line:line+';';}))+'\n}';
+					preserved.push(blockCss);
+					fallbackBlocks.push({css:blockCss,decls:parseDeclarations(body)});
 				}
 			}
+			if(foundBlock&&!decls.length&&fallbackBlocks.length===1){decls=fallbackBlocks[0].decls;preserved=[];}
 			if(!foundBlock) decls=parseDeclarations(css);
 			return {decls:decls,preserved:preserved};
 		}
@@ -447,6 +468,15 @@ function playbrick_builder_panel_output() {
 		custom.addEventListener('blur',function(){isEditing=false;sync();});
 		custom.addEventListener('input',function(){clearTimeout(writeTimer);writeTimer=setTimeout(writeCustom,150);});
 		closeBtn.addEventListener('click',function(){panel.classList.add('playbrick-hidden');});
+		if(smallerBtn) smallerBtn.addEventListener('click',function(){setPanelHeight((panel.offsetHeight||300)-80);});
+		if(biggerBtn) biggerBtn.addEventListener('click',function(){setPanelHeight((panel.offsetHeight||300)+80);});
+		if(resizeHandle) resizeHandle.addEventListener('mousedown',function(event){
+			event.preventDefault();
+			function move(moveEvent){setPanelHeight(window.innerHeight-moveEvent.clientY);}
+			function up(){document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);}
+			document.addEventListener('mousemove',move);
+			document.addEventListener('mouseup',up);
+		});
 		refreshBtn.addEventListener('click',function(){lastSignature='';sync();});
 		copyBtn.addEventListener('click',function(){
 			var text=generated.textContent||'';
