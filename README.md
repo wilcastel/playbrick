@@ -71,6 +71,21 @@ pnpm run build      # bundle + minify → output directory
 pnpm run watch      # auto-rebuild on save
 ```
 
+In Tailwind mode, each build first exports CSS classes stored in Bricks Builder to `playground/.playbrick/bricks-sources.html`. Tailwind reads that generated file through `@source`, so utilities typed inside the Builder are included in `dev.built.css` and `style.min.css`. While `pnpm run watch` is running, PlayBrick also checks Bricks for class changes, rebuilds when the generated source changes, and updates the loaded `dev.built.css` link in the browser and same-origin Bricks canvas iframes through `playground/playbrick.reload.json`.
+
+### PlayBrick CSS panel MVP
+
+When Bricks Builder is open, PlayBrick adds a small CSS panel button to the builder header. The panel currently targets Bricks global classes only:
+
+| Area | Source | Editable |
+|------|--------|----------|
+| Generated CSS | Supported Bricks visual controls from `activeClass.settings` | No |
+| Custom CSS | `activeClass.settings._cssCustom` for the active breakpoint | Yes |
+
+The panel shows how many visual controls were translated and lists unsupported settings so the mapping can grow safely over time. The MVP intentionally keeps visual-control CSS and custom CSS separate. Do not duplicate generated visual styles into `_cssCustom`; that would create two competing sources of truth.
+
+Use **Apply to visual** to map simple custom CSS declarations back into Bricks visual controls. Supported declarations are moved into `activeClass.settings`; unsupported declarations remain in `_cssCustom`.
+
 ---
 
 ## Going to production

@@ -14,8 +14,7 @@ module.exports = {
   // enqueue, or 'child_theme' when the active child theme will enqueue them.
   enqueueStrategy: 'plugin',
 
-  // Bricks Builder note: dynamic utility classes stored in the Bricks database
-  // are NOT captured by @source glob scanning at build time.
-  // Add a Tailwind safelist in dev.css for any Bricks-managed utilities, e.g.:
-  //   @source safe 'bg-primary text-white px-4 py-2 rounded';
+  // Absolute path to wp-load.php. Used by export-bricks-source.php to read
+  // classes stored in Bricks Builder before Tailwind compiles.
+  wpLoadPath: '../wp-load.php',
 };

@@ -79,5 +79,7 @@ if ( ! function_exists( 'sanitize_text_field' ) ) {
 
 require_once PLAYBRICK_DIR . 'includes/enqueue-strategy.php';
 require_once PLAYBRICK_DIR . 'includes/scaffold.php';
+require_once PLAYBRICK_DIR . 'includes/bricks-source.php';
 require_once PLAYBRICK_DIR . 'includes/enqueue.php';
+require_once PLAYBRICK_DIR . 'includes/builder-panel.php';
 require_once PLAYBRICK_DIR . 'includes/admin.php';

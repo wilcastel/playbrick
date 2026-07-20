@@ -25,7 +25,8 @@ function playbrick_create_scaffold() {
     $content = "module.exports = {\n"
              . "  outDir:          " . json_encode($out_dir)         . ",\n"
              . "  mode:            " . json_encode($mode)            . ",\n"
-             . "  enqueueStrategy: " . json_encode($enqueue_strategy) . "\n"
+             . "  enqueueStrategy: " . json_encode($enqueue_strategy) . ",\n"
+             . "  wpLoadPath:      " . json_encode(ABSPATH . 'wp-load.php') . "\n"
              . "};\n";
     file_put_contents($config_file, $content);
   }
@@ -84,6 +85,7 @@ function playbrick_repair_scaffold( $settings = null ) {
     'build.js',
     'dev.css',
     'dev.js',
+    'export-bricks-source.php',
     'package.json',
     'playbrick.config.js.example',
   ];

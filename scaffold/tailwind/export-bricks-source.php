@@ -1,0 +1,20 @@
+<?php
+$wp_load = $argv[1] ?? dirname( __DIR__ ) . '/wp-load.php';
+
+if ( ! is_file( $wp_load ) ) {
+	fwrite( STDERR, "[PlayBrick] WordPress bootstrap not found. Skipping Bricks source export.\n" );
+	exit( 0 );
+}
+
+require_once $wp_load;
+
+if ( ! function_exists( 'playbrick_generate_bricks_tailwind_source' ) ) {
+	fwrite( STDERR, "[PlayBrick] Plugin helper not available. Skipping Bricks source export.\n" );
+	exit( 0 );
+}
+
+$result = playbrick_generate_bricks_tailwind_source();
+$count  = $result['count'] ?? 0;
+$path   = $result['path'] ?? '';
+
+fwrite( STDOUT, "[PlayBrick] Exported {$count} Bricks classes to {$path}\n" );

@@ -8,8 +8,9 @@
 @import "tailwindcss" important;
 
 /* Tailwind scans src/ for used utility classes.
-   Add more @source lines if you reference classes from JS or other files. */
+   PlayBrick also generates a Bricks source file from Builder content. */
 @source "./src/**/*.html";
+@source "./.playbrick/bricks-sources.html";
 
 /* Base — always first */
 @import './bricks/base/variables.css';

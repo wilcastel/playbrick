@@ -272,6 +272,7 @@ function playbrick_generate_config() {
            . "  outDir:          " . json_encode($out_dir)         . ",\n"
            . "  mode:            " . json_encode($mode)            . ",\n"
            . "  enqueueStrategy: " . json_encode($enqueue_strategy) . ",\n"
+           . "  wpLoadPath:      " . json_encode(ABSPATH . 'wp-load.php') . ",\n"
            . "};\n";
   file_put_contents($playground_path . '/playbrick.config.js', $content);
 

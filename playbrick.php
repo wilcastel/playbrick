@@ -16,7 +16,9 @@ define('PLAYBRICK_URL',     plugin_dir_url(__FILE__));
 
 require_once PLAYBRICK_DIR . 'includes/enqueue-strategy.php';
 require_once PLAYBRICK_DIR . 'includes/scaffold.php';
+require_once PLAYBRICK_DIR . 'includes/bricks-source.php';
 require_once PLAYBRICK_DIR . 'includes/enqueue.php';
+require_once PLAYBRICK_DIR . 'includes/builder-panel.php';
 require_once PLAYBRICK_DIR . 'includes/admin.php';
 
 register_activation_hook(__FILE__, 'playbrick_activate');
