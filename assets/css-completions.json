@@ -124,5 +124,20 @@
     "border-color": ["currentColor", "transparent", "var(--", "#ffffff", "#000000"],
     "box-shadow": ["none", "0 1px 3px rgba(0,0,0,0.12)", "0 4px 16px rgba(0,0,0,0.12)"]
   },
-  "commonValues": ["0", "4px", "8px", "12px", "16px", "24px", "1rem", "100%", "auto", "inherit", "initial", "unset", "var(--", "calc("]
+  "commonValues": ["0", "4px", "8px", "12px", "16px", "24px", "1rem", "100%", "auto", "inherit", "initial", "unset", "var(--", "calc("],
+  "tailwindUtilities": [
+    "block", "inline-block", "inline", "flex", "inline-flex", "grid", "hidden",
+    "relative", "absolute", "fixed", "sticky", "static", "inset-0", "top-0", "right-0", "bottom-0", "left-0", "z-10", "z-20", "z-50",
+    "w-full", "w-screen", "w-auto", "h-full", "h-screen", "h-auto", "min-h-screen", "max-w-screen-xl", "max-w-7xl", "mx-auto",
+    "p-0", "p-1", "p-2", "p-3", "p-4", "p-5", "p-6", "p-8", "p-10", "p-12", "px-2", "px-3", "px-4", "px-6", "px-8", "py-2", "py-3", "py-4", "py-6", "py-8",
+    "m-0", "mt-0", "mt-2", "mt-4", "mt-6", "mt-8", "mb-0", "mb-2", "mb-4", "mb-6", "mb-8", "gap-1", "gap-2", "gap-3", "gap-4", "gap-6", "gap-8",
+    "flex-row", "flex-col", "flex-wrap", "items-start", "items-center", "items-end", "items-stretch", "justify-start", "justify-center", "justify-end", "justify-between", "justify-around", "justify-evenly",
+    "text-left", "text-center", "text-right", "text-xs", "text-sm", "text-base", "text-lg", "text-xl", "text-2xl", "text-3xl", "text-4xl", "text-5xl", "text-6xl", "font-thin", "font-light", "font-normal", "font-medium", "font-semibold", "font-bold", "font-extrabold", "leading-none", "leading-tight", "leading-normal", "tracking-tight", "tracking-wide",
+    "text-white", "text-black", "text-red-300", "text-red-500", "text-slate-500", "text-slate-700", "text-slate-900",
+    "bg-transparent", "bg-white", "bg-black", "bg-red-300", "bg-red-500", "bg-yellow-600", "bg-slate-50", "bg-slate-100", "bg-slate-900",
+    "rounded", "rounded-md", "rounded-lg", "rounded-xl", "rounded-full", "border", "border-0", "border-slate-200", "border-slate-300",
+    "shadow", "shadow-sm", "shadow-md", "shadow-lg", "shadow-xl", "overflow-hidden", "overflow-auto", "object-cover", "object-contain",
+    "opacity-0", "opacity-50", "opacity-75", "opacity-100", "transition", "duration-200", "duration-300", "ease-in-out",
+    "hover:bg-red-500", "hover:text-white", "hover:opacity-80", "md:flex", "md:grid", "md:p-8", "md:px-8", "md:text-xl"
+  ]
 }

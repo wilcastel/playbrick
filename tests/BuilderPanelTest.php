@@ -59,5 +59,9 @@ class BuilderPanelTest extends TestCase {
 		$this->assertContains( '16 / 9', $completions['values']['aspect-ratio'] );
 		$this->assertContains( 'balance', $completions['values']['text-wrap'] );
 		$this->assertContains( 'flex', $completions['values']['display'] );
+		$this->assertContains( 'bg-red-500', $completions['tailwindUtilities'] );
+		$this->assertContains( 'md:flex', $completions['tailwindUtilities'] );
+		$this->assertContains( 'text-5xl', $completions['tailwindUtilities'] );
+		$this->assertContains( 'font-bold', $completions['tailwindUtilities'] );
 	}
 }

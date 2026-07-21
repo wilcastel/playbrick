@@ -18,9 +18,10 @@ function playbrick_builder_panel_css_completions() {
 	if (!is_array($data)) return [ 'properties' => [], 'values' => [], 'commonValues' => [] ];
 
 	return [
-		'properties'   => isset($data['properties']) && is_array($data['properties']) ? array_values($data['properties']) : [],
-		'values'       => isset($data['values']) && is_array($data['values']) ? $data['values'] : [],
-		'commonValues' => isset($data['commonValues']) && is_array($data['commonValues']) ? array_values($data['commonValues']) : [],
+		'properties'        => isset($data['properties']) && is_array($data['properties']) ? array_values($data['properties']) : [],
+		'values'            => isset($data['values']) && is_array($data['values']) ? $data['values'] : [],
+		'commonValues'      => isset($data['commonValues']) && is_array($data['commonValues']) ? array_values($data['commonValues']) : [],
+		'tailwindUtilities' => isset($data['tailwindUtilities']) && is_array($data['tailwindUtilities']) ? array_values($data['tailwindUtilities']) : [],
 	];
 }
 
@@ -536,6 +537,13 @@ function playbrick_builder_panel_output() {
 			var lineStart=text.lastIndexOf('\n',pos-1)+1;
 			var line=text.slice(lineStart,pos);
 			var segment=line.slice(Math.max(line.lastIndexOf(';')+1,line.lastIndexOf('{')+1));
+			var applyMatch=segment.match(/@apply\s+([^;{}]*)$/);
+			if(applyMatch){
+				var utilities=applyMatch[1];
+				var utilityMatch=utilities.match(/([^\s]*)$/);
+				var utilityText=utilityMatch?utilityMatch[1]:'';
+				return {mode:'tailwind',from:pos-utilityText.length,to:pos,query:utilityText.toLowerCase(),property:''};
+			}
 			var colon=segment.indexOf(':');
 			if(colon===-1){
 				var propMatch=segment.match(/([a-z-]*)$/i);
@@ -556,7 +564,7 @@ function playbrick_builder_panel_output() {
 		}
 
 		function completionOptions(context,explicit){
-			var source=context.mode==='property'?(cssCompletions.properties||[]):((cssCompletions.values&&cssCompletions.values[context.property])||[]).concat(cssCompletions.commonValues||[]);
+			var source=context.mode==='tailwind'?(cssCompletions.tailwindUtilities||[]):(context.mode==='property'?(cssCompletions.properties||[]):((cssCompletions.values&&cssCompletions.values[context.property])||[]).concat(cssCompletions.commonValues||[]));
 			var seen={};
 			var options=source.filter(function(item){
 				item=String(item||'');
@@ -593,7 +601,7 @@ function playbrick_builder_panel_output() {
 			if(!document.activeElement||document.activeElement!==custom){hideAutocomplete();return;}
 			var context=currentAutocompleteContext();
 			var hasPropertyValues=context.mode==='value'&&cssCompletions.values&&cssCompletions.values[context.property]&&cssCompletions.values[context.property].length;
-			if(!explicit&&context.query.length<1&&!hasPropertyValues){hideAutocomplete();return;}
+			if(!explicit&&context.query.length<1&&!hasPropertyValues&&context.mode!=='tailwind'){hideAutocomplete();return;}
 			autocompleteRange={from:context.from,to:context.to,mode:context.mode};
 			autocompleteItems=completionOptions(context,explicit);
 			autocompleteIndex=0;
@@ -606,7 +614,7 @@ function playbrick_builder_panel_output() {
 		function applyAutocomplete(index){
 			if(!autocompleteRange||!autocompleteItems[index]) return;
 			var item=autocompleteItems[index];
-			var insert=item.label+(autocompleteRange.mode==='property'?': ':'');
+			var insert=item.label+(autocompleteRange.mode==='property'?': ':(autocompleteRange.mode==='tailwind'?' ':''));
 			var before=custom.value.slice(0,autocompleteRange.from);
 			var after=custom.value.slice(autocompleteRange.to);
 			custom.value=before+insert+after;
@@ -833,7 +841,7 @@ function playbrick_builder_panel_output() {
 			var unmapped=[];
 			var mapped=0;
 			parsed.decls.forEach(function(decl){if(mapDeclaration(cls.settings,decl)) mapped++; else unmapped.push(decl);});
-			if(!mapped){setStatus('No supported declarations to apply',2200);return;}
+			if(!mapped){setStatus(/@apply\s+/.test(custom.value||'')?'Tailwind @apply stays in custom CSS - save Bricks and let watch rebuild':'No supported declarations to apply',3200);return;}
 			var remaining=rebuildCustomCss(cls,unmapped,parsed.preserved);
 			cls.settings[cssKey()]=remaining;
 			custom.value=remaining;
