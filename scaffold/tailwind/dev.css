@@ -11,11 +11,15 @@
    PlayBrick also generates a Bricks source file from Builder content. */
 @source "./src/**/*.html";
 @source "./.playbrick/bricks-sources.html";
+@source "./.playbrick/bricks-sources.txt";
 
 /* Base — always first */
 @import './bricks/base/variables.css';
 @import './bricks/base/reset.css';
 @import './bricks/base/global.css';
+
+/* Bricks Custom CSS processed by Tailwind (supports @apply in PlayBrick CSS Panel) */
+@import './.playbrick/bricks-custom.css';
 
 /* Components — add here */
 /* @import './bricks/components/button.css'; */

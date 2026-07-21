@@ -7,17 +7,104 @@ function playbrick_bricks_tailwind_source_path( $settings = null ) {
 	return untrailingslashit( $playground_path ) . '/.playbrick/bricks-sources.html';
 }
 
+function playbrick_bricks_tailwind_raw_source_path( $settings = null ) {
+	if ( $settings === null ) $settings = get_option( 'playbrick_settings', [] );
+	$playground_path = $settings['playground_path'] ?? ( ABSPATH . 'playground' );
+	return untrailingslashit( $playground_path ) . '/.playbrick/bricks-sources.txt';
+}
+
+function playbrick_bricks_tailwind_custom_css_path( $settings = null ) {
+	if ( $settings === null ) $settings = get_option( 'playbrick_settings', [] );
+	$playground_path = $settings['playground_path'] ?? ( ABSPATH . 'playground' );
+	return untrailingslashit( $playground_path ) . '/.playbrick/bricks-custom.css';
+}
+
 function playbrick_generate_bricks_tailwind_source( $settings = null ) {
 	if ( $settings === null ) $settings = get_option( 'playbrick_settings', [] );
 	$playground_path = $settings['playground_path'] ?? ( ABSPATH . 'playground' );
 	$classes         = playbrick_collect_bricks_tailwind_classes();
-	$path            = playbrick_write_bricks_tailwind_source( $playground_path, $classes );
+	$custom_css      = playbrick_collect_bricks_tailwind_custom_css();
+	$classes         = array_merge( $classes, playbrick_extract_tailwind_apply_classes( $custom_css ) );
+	$path            = playbrick_write_bricks_tailwind_source( $playground_path, $classes, $custom_css );
+	$raw_path        = playbrick_bricks_tailwind_raw_source_path( $settings );
+	$custom_css_path = playbrick_bricks_tailwind_custom_css_path( $settings );
 
 	return [
-		'path'    => $path,
-		'classes' => $classes,
-		'count'   => count( $classes ),
+		'path'            => $path,
+		'raw_path'        => $raw_path,
+		'custom_css_path' => $custom_css_path,
+		'classes'         => $classes,
+		'count'           => count( $classes ),
 	];
+}
+
+function playbrick_collect_bricks_tailwind_custom_css() {
+	$chunks = [];
+
+	foreach ( playbrick_get_bricks_global_classes() as $global_class ) {
+		if ( ! is_array( $global_class ) ) continue;
+
+		$name     = $global_class['name'] ?? '';
+		$settings = $global_class['settings'] ?? [];
+
+		if ( ! is_string( $name ) || $name === '' || ! is_array( $settings ) ) continue;
+
+		$selector = '.' . ltrim( trim( $name ), '.' );
+		$chunks   = array_merge( $chunks, playbrick_extract_tailwind_custom_css_from_settings( $settings, $selector ) );
+	}
+
+	return trim( implode( "\n\n", array_filter( $chunks ) ) );
+}
+
+function playbrick_extract_tailwind_custom_css_from_settings( array $settings, $selector ) {
+	$chunks = [];
+
+	foreach ( $settings as $key => $value ) {
+		if ( strpos( (string) $key, '_cssCustom' ) !== 0 || ! is_string( $value ) || trim( $value ) === '' ) continue;
+
+		$chunks[] = playbrick_normalize_tailwind_custom_css_block( $value, $selector, $key );
+	}
+
+	return $chunks;
+}
+
+function playbrick_normalize_tailwind_custom_css_block( $css, $selector, $source_key = '_cssCustom' ) {
+	$css = trim( (string) $css );
+	$css = str_replace( '%root%', $selector, $css );
+
+	if ( strpos( $css, '{' ) !== false ) {
+		return "/* {$source_key} */\n" . $css;
+	}
+
+	$lines = array_values( array_filter( array_map( 'trim', preg_split( '/\R/', $css ) ) ) );
+	$lines = array_map(
+		function ( $line ) {
+			if ( $line !== '' && $line[0] === '@' && substr( $line, -1 ) !== ';' ) {
+				return $line . ';';
+			}
+
+			return $line;
+		},
+		$lines
+	);
+
+	return "/* {$source_key} */\n{$selector} {\n  " . implode( "\n  ", $lines ) . "\n}";
+}
+
+function playbrick_extract_tailwind_apply_classes( $css ) {
+	$classes = [];
+
+	if ( ! is_string( $css ) || trim( $css ) === '' ) {
+		return [];
+	}
+
+	if ( preg_match_all( '/@apply\s+([^;{}]+)/', $css, $matches ) ) {
+		foreach ( $matches[1] as $apply_value ) {
+			$classes = array_merge( $classes, preg_split( '/\s+/', trim( $apply_value ) ) );
+		}
+	}
+
+	return playbrick_normalize_class_list( $classes );
 }
 
 function playbrick_collect_bricks_tailwind_classes() {
@@ -37,8 +124,7 @@ function playbrick_collect_bricks_tailwind_classes() {
 }
 
 function playbrick_get_bricks_global_class_map() {
-	$option_name    = defined( 'BRICKS_DB_GLOBAL_CLASSES' ) ? BRICKS_DB_GLOBAL_CLASSES : 'bricks_global_classes';
-	$global_classes = get_option( $option_name, [] );
+	$global_classes = playbrick_get_bricks_global_classes();
 	$map            = [];
 
 	if ( ! is_array( $global_classes ) ) {
@@ -56,6 +142,13 @@ function playbrick_get_bricks_global_class_map() {
 	}
 
 	return $map;
+}
+
+function playbrick_get_bricks_global_classes() {
+	$option_name    = defined( 'BRICKS_DB_GLOBAL_CLASSES' ) ? BRICKS_DB_GLOBAL_CLASSES : 'bricks_global_classes';
+	$global_classes = get_option( $option_name, [] );
+
+	return is_array( $global_classes ) ? $global_classes : [];
 }
 
 function playbrick_get_bricks_content_rows() {
@@ -140,10 +233,12 @@ function playbrick_extract_classes_from_bricks_attributes( array $attributes ) {
 	return $classes;
 }
 
-function playbrick_write_bricks_tailwind_source( $playground_path, array $classes ) {
+function playbrick_write_bricks_tailwind_source( $playground_path, array $classes, $custom_css = '' ) {
 	$classes = playbrick_normalize_class_list( $classes );
 	$dir     = untrailingslashit( $playground_path ) . '/.playbrick';
 	$path    = $dir . '/bricks-sources.html';
+	$raw_path = $dir . '/bricks-sources.txt';
+	$custom_css_path = $dir . '/bricks-custom.css';
 
 	if ( ! is_dir( $dir ) ) {
 		wp_mkdir_p( $dir );
@@ -151,12 +246,22 @@ function playbrick_write_bricks_tailwind_source( $playground_path, array $classe
 
 	$html  = "<!-- Generated by PlayBrick. Do not edit manually. -->\n";
 	$html .= '<div class="' . htmlspecialchars( implode( ' ', $classes ), ENT_QUOTES, 'UTF-8' ) . '"></div>' . "\n";
+	$raw   = "# Generated by PlayBrick. Do not edit manually.\n" . implode( "\n", $classes ) . "\n";
+	$custom_css = trim( (string) $custom_css );
+	$custom_css = "/* Generated by PlayBrick. Do not edit manually. */\n" . ( $custom_css ? $custom_css . "\n" : '' );
 
 	if ( file_exists( $path ) && file_get_contents( $path ) === $html ) {
-		return $path;
+		if (
+			file_exists( $raw_path ) && file_get_contents( $raw_path ) === $raw &&
+			file_exists( $custom_css_path ) && file_get_contents( $custom_css_path ) === $custom_css
+		) {
+			return $path;
+		}
 	}
 
 	file_put_contents( $path, $html, LOCK_EX );
+	file_put_contents( $raw_path, $raw, LOCK_EX );
+	file_put_contents( $custom_css_path, $custom_css, LOCK_EX );
 
 	return $path;
 }
@@ -167,7 +272,7 @@ function playbrick_normalize_class_list( array $classes ) {
 	foreach ( $classes as $class ) {
 		$class = trim( (string) $class );
 		if ( $class === '' ) continue;
-		if ( preg_match( '/[\s<>"\']/', $class ) ) continue;
+		if ( preg_match( '/\s|[\x00-\x1F\x7F]/', $class ) ) continue;
 		$normalized[] = $class;
 	}
 

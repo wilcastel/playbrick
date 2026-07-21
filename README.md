@@ -71,7 +71,7 @@ pnpm run build      # bundle + minify → output directory
 pnpm run watch      # auto-rebuild on save
 ```
 
-In Tailwind mode, each build first exports CSS classes stored in Bricks Builder to `playground/.playbrick/bricks-sources.html`. Tailwind reads that generated file through `@source`, so utilities typed inside the Builder are included in `dev.built.css` and `style.min.css`. While `pnpm run watch` is running, PlayBrick also checks Bricks for class changes, rebuilds when the generated source changes, and updates the loaded `dev.built.css` link in the browser and same-origin Bricks canvas iframes through `playground/playbrick.reload.json`.
+In Tailwind mode, each build first exports CSS classes stored in Bricks Builder to `playground/.playbrick/bricks-sources.html` and `playground/.playbrick/bricks-sources.txt`, plus global-class Custom CSS to `playground/.playbrick/bricks-custom.css`. Tailwind reads the source files through `@source`, so utilities typed inside the Builder are included in `dev.built.css` and `style.min.css`. The `.txt` source preserves advanced Tailwind utilities such as arbitrary variants and values without HTML escaping. The generated CSS file lets Custom CSS from the PlayBrick CSS Panel use Tailwind directives such as `@apply`. While `pnpm run watch` is running, PlayBrick also checks Bricks for class changes, rebuilds when generated sources change, and updates the loaded `dev.built.css` link in the browser and same-origin Bricks canvas iframes through `playground/playbrick.reload.json`.
 
 ### PlayBrick CSS panel MVP
 

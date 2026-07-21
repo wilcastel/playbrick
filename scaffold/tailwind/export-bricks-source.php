@@ -16,5 +16,7 @@ if ( ! function_exists( 'playbrick_generate_bricks_tailwind_source' ) ) {
 $result = playbrick_generate_bricks_tailwind_source();
 $count  = $result['count'] ?? 0;
 $path   = $result['path'] ?? '';
+$raw_path = $result['raw_path'] ?? '';
+$custom_css_path = $result['custom_css_path'] ?? '';
 
-fwrite( STDOUT, "[PlayBrick] Exported {$count} Bricks classes to {$path}\n" );
+fwrite( STDOUT, "[PlayBrick] Exported {$count} Bricks classes to {$path}" . ( $raw_path ? ", {$raw_path}" : '' ) . ( $custom_css_path ? ", {$custom_css_path}" : '' ) . "\n" );

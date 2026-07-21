@@ -28,6 +28,8 @@ var CSS_OUT     = path.join(OUT_DIR, 'style.min.css');
 var CSS_DEV_OUT = path.join(ROOT, 'dev.built.css');
 var JS_OUT      = path.join(OUT_DIR, 'script.min.js');
 var BRICKS_SOURCE_OUT = path.join(ROOT, '.playbrick', 'bricks-sources.html');
+var BRICKS_RAW_SOURCE_OUT = path.join(ROOT, '.playbrick', 'bricks-sources.txt');
+var BRICKS_CUSTOM_CSS_OUT = path.join(ROOT, '.playbrick', 'bricks-custom.css');
 var RELOAD_OUT  = path.join(ROOT, 'playbrick.reload.json');
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -44,6 +46,12 @@ function readFileIfExists(file) {
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
 }
 
+function readBricksSourceSnapshot() {
+  return [BRICKS_SOURCE_OUT, BRICKS_RAW_SOURCE_OUT, BRICKS_CUSTOM_CSS_OUT]
+    .map(function (file) { return file + '\n' + readFileIfExists(file); })
+    .join('\n---\n');
+}
+
 function writeReloadManifest() {
   fs.writeFileSync(RELOAD_OUT, JSON.stringify({ updatedAt: Date.now() }));
 }
@@ -52,7 +60,7 @@ function exportBricksSource(options) {
   var script = path.join(ROOT, 'export-bricks-source.php');
   if (!fs.existsSync(script)) return;
 
-  var before = readFileIfExists(BRICKS_SOURCE_OUT);
+  var before = readBricksSourceSnapshot();
   var silent = options && options.silent;
 
   try {
@@ -62,7 +70,7 @@ function exportBricksSource(options) {
     return false;
   }
 
-  return before !== readFileIfExists(BRICKS_SOURCE_OUT);
+  return before !== readBricksSourceSnapshot();
 }
 
 // ── CSS build ─────────────────────────────────────────────────────────────────
