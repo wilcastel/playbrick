@@ -51,6 +51,7 @@ function playbrick_builder_panel_output() {
 			<button type="button" class="playbrick-css-btn" id="playbrick-css-copy">Copy generated</button>
 			<button type="button" class="playbrick-css-btn" id="playbrick-css-copy-declarations">Copy declarations</button>
 			<button type="button" class="playbrick-css-btn is-primary" id="playbrick-css-apply-visual">Apply to visual</button>
+			<button type="button" class="playbrick-css-btn" id="playbrick-css-clear-custom">Clear custom</button>
 			<button type="button" class="playbrick-css-btn" id="playbrick-css-smaller">Smaller</button>
 			<button type="button" class="playbrick-css-btn" id="playbrick-css-bigger">Bigger</button>
 			<button type="button" class="playbrick-css-btn" id="playbrick-css-refresh">Refresh</button>
@@ -84,6 +85,7 @@ function playbrick_builder_panel_output() {
 		var copyBtn=document.getElementById('playbrick-css-copy');
 		var copyDeclarationsBtn=document.getElementById('playbrick-css-copy-declarations');
 		var applyVisualBtn=document.getElementById('playbrick-css-apply-visual');
+		var clearCustomBtn=document.getElementById('playbrick-css-clear-custom');
 		var smallerBtn=document.getElementById('playbrick-css-smaller');
 		var biggerBtn=document.getElementById('playbrick-css-bigger');
 		var closeBtn=document.getElementById('playbrick-css-close');
@@ -506,6 +508,18 @@ function playbrick_builder_panel_output() {
 			var text=declarationsOnlyFromCss(generated.textContent||'');
 			if(!text){setStatus('No declarations to copy',1600);return;}
 			copyText(copyDeclarationsBtn,text);
+		});
+		if(clearCustomBtn) clearCustomBtn.addEventListener('click',function(){
+			var cls=getActiveClass();
+			if(!cls||!cls.id) return;
+			if(!cls.settings) cls.settings={};
+			cls.settings[cssKey()]='';
+			custom.value='';
+			isEditing=false;
+			lastSignature='';
+			applyPreview(cls,'');
+			setStatus('Custom CSS cleared for '+getBreakpoint(),2200);
+			sync();
 		});
 		applyVisualBtn.addEventListener('click',function(){
 			var cls=getActiveClass();
