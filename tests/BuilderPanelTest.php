@@ -5,6 +5,7 @@ use PHPUnit\Framework\TestCase;
 use Brain\Monkey;
 
 class BuilderPanelTest extends TestCase {
+	private array $temp_dirs = [];
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -13,8 +14,34 @@ class BuilderPanelTest extends TestCase {
 
 	protected function tearDown(): void {
 		$_GET = [];
+		foreach ( $this->temp_dirs as $dir ) {
+			$this->remove_dir( $dir );
+		}
+		$this->temp_dirs = [];
 		Monkey\tearDown();
 		parent::tearDown();
+	}
+
+	private function temp_playground(): string {
+		$dir = sys_get_temp_dir() . '/playbrick-builder-panel-' . uniqid( '', true );
+		mkdir( $dir . '/.playbrick', 0777, true );
+		$this->temp_dirs[] = $dir;
+
+		return $dir;
+	}
+
+	private function remove_dir( string $dir ): void {
+		if ( ! is_dir( $dir ) ) return;
+
+		$items = scandir( $dir );
+		foreach ( $items as $item ) {
+			if ( $item === '.' || $item === '..' ) continue;
+
+			$path = $dir . '/' . $item;
+			is_dir( $path ) ? $this->remove_dir( $path ) : unlink( $path );
+		}
+
+		rmdir( $dir );
 	}
 
 	public function test_builder_panel_is_registered_in_footer(): void {
@@ -63,5 +90,49 @@ class BuilderPanelTest extends TestCase {
 		$this->assertContains( 'md:flex', $completions['tailwindUtilities'] );
 		$this->assertContains( 'text-5xl', $completions['tailwindUtilities'] );
 		$this->assertContains( 'font-bold', $completions['tailwindUtilities'] );
+	}
+
+	public function test_css_completions_merge_dynamic_tailwind_utilities(): void {
+		$playground = $this->temp_playground();
+		file_put_contents(
+			$playground . '/.playbrick/tailwind-utilities.json',
+			json_encode(
+				[
+					'tailwindUtilities' => [
+						'bg-brand-amber',
+						'text-brand-amber',
+						'bg-red-500',
+						'',
+						123,
+						'bg-brand-amber',
+					],
+				]
+			)
+		);
+
+		Monkey\Functions\when( 'get_option' )->justReturn( [ 'playground_path' => $playground ] );
+
+		$utilities = playbrick_builder_panel_css_completions()['tailwindUtilities'];
+
+		$this->assertContains( 'bg-brand-amber', $utilities );
+		$this->assertContains( 'text-brand-amber', $utilities );
+		$this->assertContains( 'bg-red-500', $utilities );
+		$this->assertSame( 1, count( array_keys( $utilities, 'bg-brand-amber', true ) ) );
+		$this->assertSame( 1, count( array_keys( $utilities, 'bg-red-500', true ) ) );
+		$this->assertNotContains( '', $utilities );
+		$this->assertFalse( in_array( 123, $utilities, true ) );
+	}
+
+	public function test_css_completions_ignore_missing_or_invalid_dynamic_json(): void {
+		$playground = $this->temp_playground();
+		Monkey\Functions\when( 'get_option' )->justReturn( [ 'playground_path' => $playground ] );
+
+		$missing = playbrick_builder_panel_css_completions();
+		$this->assertContains( 'bg-red-500', $missing['tailwindUtilities'] );
+
+		file_put_contents( $playground . '/.playbrick/tailwind-utilities.json', '{bad json' );
+
+		$invalid = playbrick_builder_panel_css_completions();
+		$this->assertContains( 'bg-red-500', $invalid['tailwindUtilities'] );
 	}
 }

@@ -3,6 +3,44 @@ defined('ABSPATH') || exit;
 
 add_action('wp_footer', 'playbrick_builder_panel_output', 100);
 
+function playbrick_builder_panel_string_list( $items ) {
+	if ( ! is_array( $items ) ) return [];
+
+	$out  = [];
+	$seen = [];
+	foreach ( $items as $item ) {
+		if ( ! is_string( $item ) ) continue;
+
+		$item = trim( $item );
+		if ( $item === '' || isset( $seen[ $item ] ) ) continue;
+
+		$seen[ $item ] = true;
+		$out[]         = $item;
+	}
+
+	return $out;
+}
+
+function playbrick_builder_panel_dynamic_tailwind_utilities() {
+	if ( ! function_exists( 'get_option' ) || ! defined( 'ABSPATH' ) ) return [];
+
+	$settings = get_option( 'playbrick_settings', [] );
+	if ( ! is_array( $settings ) ) $settings = [];
+
+	$playground_path = ! empty( $settings['playground_path'] ) ? $settings['playground_path'] : ABSPATH . 'playground';
+	$playground_path = rtrim( (string) $playground_path, '/\\' );
+	$path            = $playground_path . '/.playbrick/tailwind-utilities.json';
+
+	if ( ! is_readable( $path ) ) return [];
+
+	$data = json_decode( file_get_contents( $path ), true );
+	if ( ! is_array( $data ) ) return [];
+
+	$items = isset( $data['tailwindUtilities'] ) && is_array( $data['tailwindUtilities'] ) ? $data['tailwindUtilities'] : $data;
+
+	return playbrick_builder_panel_string_list( $items );
+}
+
 function playbrick_is_bricks_builder_request() {
 	return ! is_admin()
 		&& isset($_GET['bricks'])
@@ -12,16 +50,23 @@ function playbrick_is_bricks_builder_request() {
 
 function playbrick_builder_panel_css_completions() {
 	$path = PLAYBRICK_DIR . 'assets/css-completions.json';
-	if (!is_readable($path)) return [ 'properties' => [], 'values' => [], 'commonValues' => [] ];
+	if (!is_readable($path)) return [ 'properties' => [], 'values' => [], 'commonValues' => [], 'tailwindUtilities' => [] ];
 
 	$data = json_decode(file_get_contents($path), true);
-	if (!is_array($data)) return [ 'properties' => [], 'values' => [], 'commonValues' => [] ];
+	if (!is_array($data)) return [ 'properties' => [], 'values' => [], 'commonValues' => [], 'tailwindUtilities' => [] ];
+
+	$tailwind_utilities = playbrick_builder_panel_string_list(
+		array_merge(
+			isset($data['tailwindUtilities']) && is_array($data['tailwindUtilities']) ? $data['tailwindUtilities'] : [],
+			playbrick_builder_panel_dynamic_tailwind_utilities()
+		)
+	);
 
 	return [
-		'properties'        => isset($data['properties']) && is_array($data['properties']) ? array_values($data['properties']) : [],
+		'properties'        => playbrick_builder_panel_string_list( $data['properties'] ?? [] ),
 		'values'            => isset($data['values']) && is_array($data['values']) ? $data['values'] : [],
-		'commonValues'      => isset($data['commonValues']) && is_array($data['commonValues']) ? array_values($data['commonValues']) : [],
-		'tailwindUtilities' => isset($data['tailwindUtilities']) && is_array($data['tailwindUtilities']) ? array_values($data['tailwindUtilities']) : [],
+		'commonValues'      => playbrick_builder_panel_string_list( $data['commonValues'] ?? [] ),
+		'tailwindUtilities' => $tailwind_utilities,
 	];
 }
 
