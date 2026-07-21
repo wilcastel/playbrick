@@ -10,8 +10,24 @@ function playbrick_is_bricks_builder_request() {
 		&& current_user_can('manage_options');
 }
 
+function playbrick_builder_panel_css_completions() {
+	$path = PLAYBRICK_DIR . 'assets/css-completions.json';
+	if (!is_readable($path)) return [ 'properties' => [], 'values' => [], 'commonValues' => [] ];
+
+	$data = json_decode(file_get_contents($path), true);
+	if (!is_array($data)) return [ 'properties' => [], 'values' => [], 'commonValues' => [] ];
+
+	return [
+		'properties'   => isset($data['properties']) && is_array($data['properties']) ? array_values($data['properties']) : [],
+		'values'       => isset($data['values']) && is_array($data['values']) ? $data['values'] : [],
+		'commonValues' => isset($data['commonValues']) && is_array($data['commonValues']) ? array_values($data['commonValues']) : [],
+	];
+}
+
 function playbrick_builder_panel_output() {
 	if (!playbrick_is_bricks_builder_request()) return;
+	$css_completions = playbrick_builder_panel_css_completions();
+	$json_encode     = function_exists('wp_json_encode') ? 'wp_json_encode' : 'json_encode';
 	?>
 	<style id="playbrick-builder-panel-styles">
 		#playbrick-css-panel{position:fixed;left:320px;right:320px;bottom:0;height:300px;min-height:180px;max-height:80vh;z-index:1000;background:#151b22;border-top:1px solid rgba(255,255,255,.12);box-shadow:0 -16px 40px rgba(0,0,0,.35);color:#d6deeb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;flex-direction:column}
@@ -35,6 +51,10 @@ function playbrick_builder_panel_output() {
 		#playbrick-generated-css,#playbrick-custom-css{flex:1;width:100%;min-height:0;margin:0;padding:12px;border:0;outline:0;background:#0f141a;color:#d6deeb;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;tab-size:2;white-space:pre;overflow:auto}
 		#playbrick-generated-css{color:#8fb7ff;background:#101720;user-select:text}
 		#playbrick-custom-css{resize:none;color:#d6deeb}
+		#playbrick-css-autocomplete{position:absolute;display:none;z-index:1002;width:280px;max-height:190px;overflow:auto;background:#111820;border:1px solid rgba(255,255,255,.16);border-radius:6px;box-shadow:0 12px 32px rgba(0,0,0,.4);padding:4px;color:#d6deeb;font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+		.playbrick-css-suggestion{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:5px 7px;border:0;border-radius:4px;background:transparent;color:#d6deeb;text-align:left;font:inherit;cursor:pointer}
+		.playbrick-css-suggestion:hover,.playbrick-css-suggestion.is-active{background:rgba(51,153,255,.18);color:#fff}
+		.playbrick-css-suggestion-type{color:#8a99a8;font:10px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-transform:uppercase;letter-spacing:.04em}
 		#playbrick-unsupported{display:none;max-height:54px;overflow:auto;padding:7px 10px;border-top:1px solid rgba(255,255,255,.08);background:#171f29;color:#ffd479;font:11px/1.4 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
 		#playbrick-unsupported strong{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#f8d78b;margin-right:6px}
 		#playbrick-css-empty{position:absolute;inset:34px 0 0;display:none;align-items:center;justify-content:center;background:#151b22;color:#95a3b3;font-size:13px;text-align:center;padding:24px}
@@ -71,7 +91,9 @@ function playbrick_builder_panel_output() {
 		</div>
 		<div id="playbrick-css-empty">Select a global class in Bricks to inspect and edit its CSS.</div>
 		<div id="playbrick-css-resize" title="Drag to resize"></div>
+		<div id="playbrick-css-autocomplete" role="listbox"></div>
 	</div>
+	<script type="application/json" id="playbrick-css-completions-data"><?php echo $json_encode($css_completions); ?></script>
 	<script id="playbrick-builder-panel-script">
 	(function(){
 		'use strict';
@@ -82,6 +104,8 @@ function playbrick_builder_panel_output() {
 		var status=document.getElementById('playbrick-css-status');
 		var generated=document.getElementById('playbrick-generated-css');
 		var custom=document.getElementById('playbrick-custom-css');
+		var autocomplete=document.getElementById('playbrick-css-autocomplete');
+		var completionsData=document.getElementById('playbrick-css-completions-data');
 		var copyBtn=document.getElementById('playbrick-css-copy');
 		var copyDeclarationsBtn=document.getElementById('playbrick-css-copy-declarations');
 		var applyVisualBtn=document.getElementById('playbrick-css-apply-visual');
@@ -97,6 +121,9 @@ function playbrick_builder_panel_output() {
 		var currentClassId=null;
 		var lastSignature='';
 		var statusHoldUntil=0;
+		var autocompleteItems=[];
+		var autocompleteIndex=0;
+		var autocompleteRange=null;
 		var writeTimer=null;
 		var isEditing=false;
 
@@ -112,6 +139,8 @@ function playbrick_builder_panel_output() {
 		try{setPanelHeight(window.localStorage.getItem('playbrickCssPanelHeight')||300);}catch(e){setPanelHeight(300);}
 		function setStatus(message,holdMs){status.textContent=message;statusHoldUntil=holdMs?Date.now()+holdMs:0;}
 		function syncStatus(message){if(Date.now()>statusHoldUntil) status.textContent=message;}
+		function readCompletions(){try{return completionsData?JSON.parse(completionsData.textContent||'{}'):{};}catch(e){return {};}}
+		var cssCompletions=readCompletions();
 
 		function getState(){
 			try{var app=document.querySelector('[data-v-app]');return app&&app.__vue_app__&&app.__vue_app__.config.globalProperties.$_state||null;}catch(e){return null;}
@@ -367,6 +396,86 @@ function playbrick_builder_panel_output() {
 			}).filter(Boolean);
 		}
 
+		function currentAutocompleteContext(){
+			var pos=custom.selectionStart||0;
+			var text=custom.value||'';
+			var lineStart=text.lastIndexOf('\n',pos-1)+1;
+			var line=text.slice(lineStart,pos);
+			var segment=line.slice(Math.max(line.lastIndexOf(';')+1,line.lastIndexOf('{')+1));
+			var colon=segment.indexOf(':');
+			if(colon===-1){
+				var propMatch=segment.match(/([a-z-]*)$/i);
+				var propText=propMatch?propMatch[1]:'';
+				return {mode:'property',from:pos-propText.length,to:pos,query:propText.toLowerCase(),property:''};
+			}
+			var property=segment.slice(0,colon).trim().toLowerCase();
+			var valuePart=segment.slice(colon+1);
+			var valueMatch=valuePart.match(/([^\s;]*)$/);
+			var valueText=valueMatch?valueMatch[1]:'';
+			return {mode:'value',from:pos-valueText.length,to:pos,query:valueText.toLowerCase(),property:property};
+		}
+
+		function completionOptions(context,explicit){
+			var source=context.mode==='property'?(cssCompletions.properties||[]):((cssCompletions.values&&cssCompletions.values[context.property])||[]).concat(cssCompletions.commonValues||[]);
+			var seen={};
+			var options=source.filter(function(item){
+				item=String(item||'');
+				if(!item||seen[item]) return false;
+				seen[item]=true;
+				return explicit||!context.query||item.toLowerCase().indexOf(context.query)===0;
+			});
+			return options.slice(0,24).map(function(label){return {label:label,type:context.mode};});
+		}
+
+		function positionAutocomplete(){
+			if(!autocomplete) return;
+			var rect=custom.getBoundingClientRect();
+			var panelRect=panel.getBoundingClientRect();
+			var before=(custom.value||'').slice(0,custom.selectionStart||0).split('\n');
+			var lineHeight=18.6;
+			var charWidth=7.2;
+			var top=rect.top-panelRect.top+12+((before.length-1)*lineHeight)-custom.scrollTop+lineHeight;
+			var left=rect.left-panelRect.left+12+(before[before.length-1].length*charWidth)-custom.scrollLeft;
+			top=Math.max(rect.top-panelRect.top+8,Math.min(top,rect.bottom-panelRect.top-20));
+			left=Math.max(rect.left-panelRect.left+8,Math.min(left,rect.right-panelRect.left-290));
+			autocomplete.style.top=top+'px';
+			autocomplete.style.left=left+'px';
+		}
+
+		function renderAutocomplete(){
+			if(!autocomplete) return;
+			autocomplete.innerHTML=autocompleteItems.map(function(item,index){return '<button type="button" class="playbrick-css-suggestion'+(index===autocompleteIndex?' is-active':'')+'" data-index="'+index+'"><span>'+item.label.replace(/[&<>]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[ch];})+'</span><span class="playbrick-css-suggestion-type">'+item.type+'</span></button>';}).join('');
+			positionAutocomplete();
+			autocomplete.style.display=autocompleteItems.length?'block':'none';
+		}
+
+		function updateAutocomplete(explicit){
+			if(!document.activeElement||document.activeElement!==custom){hideAutocomplete();return;}
+			var context=currentAutocompleteContext();
+			if(!explicit&&context.query.length<1){hideAutocomplete();return;}
+			autocompleteRange={from:context.from,to:context.to,mode:context.mode};
+			autocompleteItems=completionOptions(context,explicit);
+			autocompleteIndex=0;
+			renderAutocomplete();
+		}
+
+		function hideAutocomplete(){if(autocomplete) autocomplete.style.display='none';autocompleteItems=[];autocompleteRange=null;}
+		function autocompleteVisible(){return autocomplete&&autocomplete.style.display==='block'&&autocompleteItems.length;}
+		function moveAutocomplete(delta){autocompleteIndex=(autocompleteIndex+delta+autocompleteItems.length)%autocompleteItems.length;renderAutocomplete();}
+		function applyAutocomplete(index){
+			if(!autocompleteRange||!autocompleteItems[index]) return;
+			var item=autocompleteItems[index];
+			var insert=item.label+(autocompleteRange.mode==='property'?': ':'');
+			var before=custom.value.slice(0,autocompleteRange.from);
+			var after=custom.value.slice(autocompleteRange.to);
+			custom.value=before+insert+after;
+			var cursor=before.length+insert.length;
+			custom.selectionStart=cursor;
+			custom.selectionEnd=cursor;
+			hideAutocomplete();
+			custom.dispatchEvent(new Event('input',{bubbles:true}));
+		}
+
 		function parseCustomCss(cls,css){
 			css=String(css||'').replace(/\/\*[\s\S]*?\*\//g,'').trim();
 			var selector=selectorFor(cls);
@@ -485,8 +594,24 @@ function playbrick_builder_panel_output() {
 		}
 
 		custom.addEventListener('focus',function(){isEditing=true;});
-		custom.addEventListener('blur',function(){isEditing=false;sync();});
-		custom.addEventListener('input',function(){clearTimeout(writeTimer);writeTimer=setTimeout(writeCustom,150);});
+		custom.addEventListener('blur',function(){setTimeout(hideAutocomplete,120);isEditing=false;sync();});
+		custom.addEventListener('input',function(){updateAutocomplete(false);clearTimeout(writeTimer);writeTimer=setTimeout(writeCustom,150);});
+		custom.addEventListener('click',function(){updateAutocomplete(false);});
+		custom.addEventListener('keydown',function(event){
+			if(autocompleteVisible()){
+				if(event.key==='ArrowDown'){event.preventDefault();moveAutocomplete(1);return;}
+				if(event.key==='ArrowUp'){event.preventDefault();moveAutocomplete(-1);return;}
+				if(event.key==='Enter'||event.key==='Tab'){event.preventDefault();applyAutocomplete(autocompleteIndex);return;}
+				if(event.key==='Escape'){event.preventDefault();hideAutocomplete();return;}
+			}
+			if(event.ctrlKey&&event.key===' '){event.preventDefault();updateAutocomplete(true);}
+		});
+		if(autocomplete) autocomplete.addEventListener('mousedown',function(event){
+			var button=event.target.closest&&event.target.closest('.playbrick-css-suggestion');
+			if(!button) return;
+			event.preventDefault();
+			applyAutocomplete(parseInt(button.getAttribute('data-index'),10)||0);
+		});
 		closeBtn.addEventListener('click',function(){panel.classList.add('playbrick-hidden');});
 		if(smallerBtn) smallerBtn.addEventListener('click',function(){setPanelHeight((panel.offsetHeight||300)-80);});
 		if(biggerBtn) biggerBtn.addEventListener('click',function(){setPanelHeight((panel.offsetHeight||300)+80);});

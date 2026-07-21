@@ -86,6 +86,8 @@ The panel shows how many visual controls were translated and lists unsupported s
 
 Use **Apply to visual** to map simple custom CSS declarations back into Bricks visual controls. Supported declarations are moved into `activeClass.settings`; unsupported declarations remain in `_cssCustom`. The MVP supports common layout, spacing, typography, background, border, border radius, and box shadow declarations.
 
+The Custom CSS editor includes lightweight autocomplete suggestions loaded from `assets/css-completions.json`, without requiring Monaco, CodeMirror, or a plugin build step.
+
 ---
 
 ## Going to production

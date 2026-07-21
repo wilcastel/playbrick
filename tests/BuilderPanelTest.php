@@ -36,4 +36,11 @@ class BuilderPanelTest extends TestCase {
 
 		$this->assertFalse( playbrick_is_bricks_builder_request() );
 	}
+
+	public function test_css_completions_are_loaded_from_json(): void {
+		$completions = playbrick_builder_panel_css_completions();
+
+		$this->assertContains( 'border-radius', $completions['properties'] );
+		$this->assertContains( 'flex', $completions['values']['display'] );
+	}
 }
