@@ -49,6 +49,7 @@ function playbrick_builder_panel_output() {
 				<span class="playbrick-css-pill is-warn" id="playbrick-unsupported-count">0 unsupported</span>
 			</span>
 			<button type="button" class="playbrick-css-btn" id="playbrick-css-copy">Copy generated</button>
+			<button type="button" class="playbrick-css-btn" id="playbrick-css-copy-declarations">Copy declarations</button>
 			<button type="button" class="playbrick-css-btn is-primary" id="playbrick-css-apply-visual">Apply to visual</button>
 			<button type="button" class="playbrick-css-btn" id="playbrick-css-smaller">Smaller</button>
 			<button type="button" class="playbrick-css-btn" id="playbrick-css-bigger">Bigger</button>
@@ -81,6 +82,7 @@ function playbrick_builder_panel_output() {
 		var generated=document.getElementById('playbrick-generated-css');
 		var custom=document.getElementById('playbrick-custom-css');
 		var copyBtn=document.getElementById('playbrick-css-copy');
+		var copyDeclarationsBtn=document.getElementById('playbrick-css-copy-declarations');
 		var applyVisualBtn=document.getElementById('playbrick-css-apply-visual');
 		var smallerBtn=document.getElementById('playbrick-css-smaller');
 		var biggerBtn=document.getElementById('playbrick-css-bigger');
@@ -92,6 +94,7 @@ function playbrick_builder_panel_output() {
 		var unsupportedEl=document.getElementById('playbrick-unsupported');
 		var currentClassId=null;
 		var lastSignature='';
+		var statusHoldUntil=0;
 		var writeTimer=null;
 		var isEditing=false;
 
@@ -105,6 +108,8 @@ function playbrick_builder_panel_output() {
 			try{window.localStorage.setItem('playbrickCssPanelHeight',String(height));}catch(e){}
 		}
 		try{setPanelHeight(window.localStorage.getItem('playbrickCssPanelHeight')||300);}catch(e){setPanelHeight(300);}
+		function setStatus(message,holdMs){status.textContent=message;statusHoldUntil=holdMs?Date.now()+holdMs:0;}
+		function syncStatus(message){if(Date.now()>statusHoldUntil) status.textContent=message;}
 
 		function getState(){
 			try{var app=document.querySelector('[data-v-app]');return app&&app.__vue_app__&&app.__vue_app__.config.globalProperties.$_state||null;}catch(e){return null;}
@@ -305,6 +310,19 @@ function playbrick_builder_panel_output() {
 			return selectorFor(cls)+' {\n'+indent(result.decls)+'\n}';
 		}
 
+		function declarationsOnlyFromCss(css){
+			var out=[];
+			var re=/[^{}]+\{([^{}]*)\}/g;
+			var match;
+			while((match=re.exec(String(css||'')))){
+				parseDeclarations(match[1]).forEach(function(decl){out.push(decl.prop+': '+decl.value+';');});
+			}
+			if(!out.length){
+				parseDeclarations(css).forEach(function(decl){out.push(decl.prop+': '+decl.value+';');});
+			}
+			return out.join('\n');
+		}
+
 		function updateDiagnostics(cls){
 			var result=declarationsFromSettings(cls&&cls.settings||{});
 			if(supportedCount) supportedCount.textContent=result.supported.length+' visual';
@@ -438,7 +456,7 @@ function playbrick_builder_panel_output() {
 
 		function sync(){
 			var cls=getActiveClass();
-			if(!cls||!cls.id||!cls.name){panel.classList.add('playbrick-no-class');currentClassId=null;title.textContent='PlayBrick CSS';status.textContent='Select a Bricks global class';generated.textContent='';updateDiagnostics(null);if(!isEditing) custom.value='';return;}
+			if(!cls||!cls.id||!cls.name){panel.classList.add('playbrick-no-class');currentClassId=null;title.textContent='PlayBrick CSS';statusHoldUntil=0;status.textContent='Select a Bricks global class';generated.textContent='';updateDiagnostics(null);if(!isEditing) custom.value='';return;}
 			panel.classList.remove('playbrick-no-class');
 			var settings=cls.settings||{};
 			var key=cssKey();
@@ -447,7 +465,7 @@ function playbrick_builder_panel_output() {
 			lastSignature=sig;
 			currentClassId=cls.id;
 			title.textContent='PlayBrick CSS – .'+cleanClassName(cls.name);
-			status.textContent='Breakpoint: '+getBreakpoint();
+			syncStatus('Breakpoint: '+getBreakpoint());
 			generated.textContent=generatedCssFor(cls);
 			updateDiagnostics(cls);
 			if(!isEditing) custom.value=settings[key]||'';
@@ -477,12 +495,17 @@ function playbrick_builder_panel_output() {
 			document.addEventListener('mousemove',move);
 			document.addEventListener('mouseup',up);
 		});
-		refreshBtn.addEventListener('click',function(){lastSignature='';sync();});
-		copyBtn.addEventListener('click',function(){
-			var text=generated.textContent||'';
+		refreshBtn.addEventListener('click',function(){statusHoldUntil=0;lastSignature='';sync();});
+		function copyText(button,text){
 			if(!text) return;
-			function done(){var old=copyBtn.textContent;copyBtn.textContent='Copied';setTimeout(function(){copyBtn.textContent=old;},1200);}
+			function done(){var old=button.textContent;button.textContent='Copied';setTimeout(function(){button.textContent=old;},1200);}
 			if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(function(){});}else{var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){}document.body.removeChild(ta);}
+		}
+		copyBtn.addEventListener('click',function(){copyText(copyBtn,generated.textContent||'');});
+		if(copyDeclarationsBtn) copyDeclarationsBtn.addEventListener('click',function(){
+			var text=declarationsOnlyFromCss(generated.textContent||'');
+			if(!text){setStatus('No declarations to copy',1600);return;}
+			copyText(copyDeclarationsBtn,text);
 		});
 		applyVisualBtn.addEventListener('click',function(){
 			var cls=getActiveClass();
@@ -492,14 +515,14 @@ function playbrick_builder_panel_output() {
 			var unmapped=[];
 			var mapped=0;
 			parsed.decls.forEach(function(decl){if(mapDeclaration(cls.settings,decl)) mapped++; else unmapped.push(decl);});
-			if(!mapped){status.textContent='No supported declarations to apply';return;}
+			if(!mapped){setStatus('No supported declarations to apply',2200);return;}
 			var remaining=rebuildCustomCss(cls,unmapped,parsed.preserved);
 			cls.settings[cssKey()]=remaining;
 			custom.value=remaining;
 			isEditing=false;
 			lastSignature='';
 			applyPreview(cls,remaining);
-			status.textContent='Applied '+mapped+' declaration'+(mapped===1?'':'s')+' to visual controls';
+			setStatus('Applied '+mapped+' declaration'+(mapped===1?'':'s')+' to visual controls'+(remaining?' - unsupported kept in custom CSS':' - custom CSS cleared'),3200);
 			sync();
 		});
 
