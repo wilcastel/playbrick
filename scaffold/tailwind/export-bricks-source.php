@@ -18,5 +18,6 @@ $count  = $result['count'] ?? 0;
 $path   = $result['path'] ?? '';
 $raw_path = $result['raw_path'] ?? '';
 $custom_css_path = $result['custom_css_path'] ?? '';
+$theme_css_path  = $result['theme_css_path'] ?? '';
 
-fwrite( STDOUT, "[PlayBrick] Exported {$count} Bricks classes to {$path}" . ( $raw_path ? ", {$raw_path}" : '' ) . ( $custom_css_path ? ", {$custom_css_path}" : '' ) . "\n" );
+fwrite( STDOUT, "[PlayBrick] Exported {$count} Bricks classes to {$path}" . ( $raw_path ? ", {$raw_path}" : '' ) . ( $custom_css_path ? ", {$custom_css_path}" : '' ) . ( $theme_css_path ? ", {$theme_css_path}" : '' ) . "\n" );

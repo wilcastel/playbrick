@@ -18,6 +18,9 @@
 @import './bricks/base/reset.css';
 @import './bricks/base/global.css';
 
+/* Bricks color palette bridged into Tailwind theme tokens (auto-generated @theme inline) */
+@import './.playbrick/bricks-theme.css';
+
 /* Bricks Custom CSS processed by Tailwind (supports @apply in PlayBrick CSS Panel) */
 @import './.playbrick/bricks-custom.css';
 

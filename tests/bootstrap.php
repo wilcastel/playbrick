@@ -77,6 +77,48 @@ if ( ! function_exists( 'sanitize_text_field' ) ) {
 	}
 }
 
+if ( ! function_exists( 'remove_accents' ) ) {
+	function remove_accents( $text ) {
+		$text = strtr(
+			$text,
+			[
+				'á' => 'a', 'à' => 'a', 'â' => 'a', 'ä' => 'a', 'ã' => 'a', 'å' => 'a',
+				'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+				'í' => 'i', 'ì' => 'i', 'î' => 'i', 'ï' => 'i',
+				'ó' => 'o', 'ò' => 'o', 'ô' => 'o', 'ö' => 'o', 'õ' => 'o', 'ø' => 'o',
+				'ú' => 'u', 'ù' => 'u', 'û' => 'u', 'ü' => 'u',
+				'ñ' => 'n', 'ç' => 'c', 'ß' => 's',
+				'Á' => 'A', 'À' => 'A', 'Â' => 'A', 'Ä' => 'A', 'Ã' => 'A', 'Å' => 'A',
+				'É' => 'E', 'È' => 'E', 'Ê' => 'E', 'Ë' => 'E',
+				'Í' => 'I', 'Ì' => 'I', 'Î' => 'I', 'Ï' => 'I',
+				'Ó' => 'O', 'Ò' => 'O', 'Ô' => 'O', 'Ö' => 'O', 'Õ' => 'O', 'Ø' => 'O',
+				'Ú' => 'U', 'Ù' => 'U', 'Û' => 'U', 'Ü' => 'U',
+				'Ñ' => 'N', 'Ç' => 'C',
+			]
+		);
+
+		if ( function_exists( 'iconv' ) ) {
+			$transliterated = iconv( 'UTF-8', 'ASCII//TRANSLIT//IGNORE', $text );
+
+			if ( $transliterated !== false ) {
+				return $transliterated;
+			}
+		}
+
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'sanitize_title' ) ) {
+	function sanitize_title( $title ) {
+		$title = remove_accents( $title );
+		$title = strtolower( $title );
+		$title = preg_replace( '/[^a-z0-9]+/', '-', $title );
+
+		return trim( $title, '-' );
+	}
+}
+
 require_once PLAYBRICK_DIR . 'includes/enqueue-strategy.php';
 require_once PLAYBRICK_DIR . 'includes/scaffold.php';
 require_once PLAYBRICK_DIR . 'includes/bricks-source.php';
