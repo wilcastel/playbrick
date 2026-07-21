@@ -41,12 +41,20 @@ class BuilderPanelTest extends TestCase {
 		$completions = playbrick_builder_panel_css_completions();
 
 		$this->assertContains( 'border-radius', $completions['properties'] );
+		$this->assertContains( 'background-position', $completions['properties'] );
+		$this->assertContains( 'background-blend-mode', $completions['properties'] );
+		$this->assertContains( 'background-attachment', $completions['properties'] );
+		$this->assertContains( 'background-repeat', $completions['properties'] );
+		$this->assertContains( 'background-size', $completions['properties'] );
+		$this->assertNotContains( 'background-video', $completions['properties'] );
 		$this->assertContains( 'aspect-ratio', $completions['properties'] );
 		$this->assertContains( 'font-variation-settings', $completions['properties'] );
 		$this->assertContains( 'white-space', $completions['properties'] );
 		$this->assertContains( 'text-wrap', $completions['properties'] );
 		$this->assertContains( 'text-shadow', $completions['properties'] );
 		$this->assertNotContains( 'masonry-layout', $completions['properties'] );
+		$this->assertContains( 'center center', $completions['values']['background-position'] );
+		$this->assertContains( 'cover', $completions['values']['background-size'] );
 		$this->assertContains( '16 / 9', $completions['values']['aspect-ratio'] );
 		$this->assertContains( 'balance', $completions['values']['text-wrap'] );
 		$this->assertContains( 'flex', $completions['values']['display'] );

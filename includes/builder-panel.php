@@ -196,7 +196,28 @@ function playbrick_builder_panel_output() {
 				var imageValue=typeof image==='object'?(image.url||image.full||image.src||''):image;
 				if(imageValue) out.push('background-image: url("'+imageValue+'");');
 			}
+			var position=backgroundPositionToCss(value);
+			if(position) out.push('background-position: '+position+';');
+			var size=backgroundSizeToCss(value);
+			if(size) out.push('background-size: '+size+';');
+			['repeat','attachment'].forEach(function(key){var val=valueToCss(value[key]);if(val) out.push('background-'+key+': '+val+';');});
+			var blendMode=valueToCss(value.blendMode||value['blend-mode']||value['background-blend-mode']);
+			if(blendMode) out.push('background-blend-mode: '+blendMode+';');
 			return out;
+		}
+
+		function backgroundPositionToCss(value){
+			if(!value||typeof value!=='object') return '';
+			var position=valueToCss(value.position||value['background-position']);
+			if(position==='custom') return [valueToCss(value.positionX)||'center',valueToCss(value.positionY)||'center'].join(' ');
+			return position;
+		}
+
+		function backgroundSizeToCss(value){
+			if(!value||typeof value!=='object') return '';
+			var size=valueToCss(value.size||value['background-size']);
+			if(size==='custom') return valueToCss(value.custom)||'';
+			return size;
 		}
 
 		function typographyToDecls(value){
@@ -303,6 +324,20 @@ function playbrick_builder_panel_output() {
 			var shadow=splitShadow(value);
 			if(!shadow) return null;
 			return {values:{offsetX:shadow.values.offsetX,offsetY:shadow.values.offsetY,blur:shadow.values.blur},color:shadow.color};
+		}
+		function splitBackgroundPosition(value){
+			value=String(value||'').trim().replace(/\s+/g,' ');
+			if(!value) return null;
+			var presets=['top left','top center','top right','center left','center center','center right','bottom left','bottom center','bottom right'];
+			if(presets.indexOf(value)!==-1) return {position:value};
+			var parts=value.split(' ');
+			return {position:'custom',positionX:parts[0]||'center',positionY:parts.slice(1).join(' ')||'center'};
+		}
+		function splitBackgroundSize(value){
+			value=String(value||'').trim();
+			if(!value) return null;
+			if(['auto','cover','contain'].indexOf(value)!==-1) return {size:value};
+			return {size:'custom',custom:value};
 		}
 
 		function isIgnoredSetting(base){return base.indexOf('_cssCustom')===0||base==='_cssGlobalClasses'||base==='_cssClasses'||base==='_cssGlobalClassesProps'||base==='_cssGlobalClassesPropsReplace';}
@@ -558,6 +593,27 @@ function playbrick_builder_panel_output() {
 				ensureObject(settings,settingKey('_background')).color=colorSetting(value);
 				return true;
 			}
+			if(prop==='background-image'){
+				var imageMatch=String(value||'').match(/url\((['"]?)(.*?)\1\)/i);
+				if(!imageMatch||!imageMatch[2]) return false;
+				ensureObject(settings,settingKey('_background')).image={url:imageMatch[2]};
+				return true;
+			}
+			if(prop==='background-position'){
+				var position=splitBackgroundPosition(value);if(!position) return false;
+				var bgPosition=ensureObject(settings,settingKey('_background'));
+				Object.keys(position).forEach(function(key){bgPosition[key]=position[key];});
+				return true;
+			}
+			if(prop==='background-size'){
+				var size=splitBackgroundSize(value);if(!size) return false;
+				var bgSize=ensureObject(settings,settingKey('_background'));
+				Object.keys(size).forEach(function(key){bgSize[key]=size[key];});
+				return true;
+			}
+			if(prop==='background-repeat'){ensureObject(settings,settingKey('_background')).repeat=value;return true;}
+			if(prop==='background-attachment'){ensureObject(settings,settingKey('_background')).attachment=value;return true;}
+			if(prop==='background-blend-mode'){ensureObject(settings,settingKey('_background')).blendMode=value;return true;}
 			if(prop==='padding'||prop==='margin'){
 				box=splitBox(value);if(!box) return false;
 				settings[settingKey(prop==='padding'?'_padding':'_margin')]=box;
