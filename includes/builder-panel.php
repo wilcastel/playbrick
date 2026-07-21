@@ -220,6 +220,31 @@ function playbrick_builder_panel_output() {
 			return size;
 		}
 
+		function gradientToDecls(value){
+			var css=gradientToCss(value);
+			return css?['background-image: '+css+';']:[];
+		}
+
+		function gradientToCss(value){
+			if(!value||typeof value!=='object'||!Array.isArray(value.colors)||!value.colors.length) return '';
+			if(value.applyTo&&value.applyTo!=='background') return '';
+			var type=value.gradientType||'linear';
+			if(type!=='linear') return '';
+			var fn=(value.repeat?'repeating-':'')+type+'-gradient';
+			var parts=[];
+			if(type==='linear'&&typeof value.angle!=='undefined'&&value.angle!==null&&value.angle!=='') parts.push(value.angle+'deg');
+			var colors=value.colors.map(function(item){
+				var color=valueToCss(item&&item.color||item);
+				if(!color) return '';
+				var stop=item&&typeof item==='object'&&item.stop!==undefined&&item.stop!==''?String(item.stop):'';
+				if(stop&&/^[-\d.]+$/.test(stop)) stop+='%';
+				return stop?color+' '+stop:color;
+			}).filter(Boolean);
+			if(colors.length===1) colors.push(colors[0]);
+			if(colors.length<2) return '';
+			return fn+'('+parts.concat(colors).join(', ')+')';
+		}
+
 		function typographyToDecls(value){
 			var out=[];
 			if(!value||typeof value!=='object') return out;
@@ -339,6 +364,40 @@ function playbrick_builder_panel_output() {
 			if(['auto','cover','contain'].indexOf(value)!==-1) return {size:value};
 			return {size:'custom',custom:value};
 		}
+		function splitCssList(value){
+			var out=[];
+			var current='';
+			var depth=0;
+			String(value||'').split('').forEach(function(ch){
+				if(ch==='(') depth++;
+				if(ch===')') depth=Math.max(0,depth-1);
+				if(ch===','&&depth===0){out.push(current.trim());current='';return;}
+				current+=ch;
+			});
+			if(current.trim()) out.push(current.trim());
+			return out;
+		}
+		function splitLinearGradient(value){
+			var text=String(value||'').trim();
+			var match=text.match(/^(repeating-)?linear-gradient\((.*)\)$/i);
+			if(!match) return null;
+			var parts=splitCssList(match[2]);
+			if(parts.length<2) return null;
+			var gradient={applyTo:'background',gradientType:'linear',colors:[]};
+			if(match[1]) gradient.repeat=true;
+			var first=parts[0].toLowerCase();
+			if(/^-?\d+(?:\.\d+)?deg$/.test(first)){
+				gradient.angle=parseFloat(first);
+				parts.shift();
+			}
+			parts.forEach(function(part){
+				var extracted=extractColorToken(part);
+				if(!extracted.color) return;
+				var stop=String(extracted.rest||'').trim().split(/\s+/)[0]||'';
+				gradient.colors.push({color:colorSetting(extracted.color),stop:stop.replace(/%$/,'')});
+			});
+			return gradient.colors.length>=2?gradient:null;
+		}
 
 		function isIgnoredSetting(base){return base.indexOf('_cssCustom')===0||base==='_cssGlobalClasses'||base==='_cssClasses'||base==='_cssGlobalClassesProps'||base==='_cssGlobalClassesPropsReplace';}
 
@@ -365,6 +424,7 @@ function playbrick_builder_panel_output() {
 				var value=settings[key];
 				var before=out.length;
 				if(base==='_background') out=out.concat(backgroundToDecls(value));
+				else if(base==='_gradient') out=out.concat(gradientToDecls(value));
 				else if(base==='_padding') out=out.concat(spacingToDecls('padding',value));
 				else if(base==='_margin') out=out.concat(spacingToDecls('margin',value));
 				else if(base==='_typography') out=out.concat(typographyToDecls(value));
@@ -589,11 +649,19 @@ function playbrick_builder_panel_output() {
 			var value=decl.value;
 			var key;
 			var box;
-			if(prop==='background-color'||prop==='background'){
+			if(prop==='background'){
+				var backgroundGradient=splitLinearGradient(value);
+				if(backgroundGradient){settings[settingKey('_gradient')]=backgroundGradient;return true;}
+				ensureObject(settings,settingKey('_background')).color=colorSetting(value);
+				return true;
+			}
+			if(prop==='background-color'){
 				ensureObject(settings,settingKey('_background')).color=colorSetting(value);
 				return true;
 			}
 			if(prop==='background-image'){
+				var gradient=splitLinearGradient(value);
+				if(gradient){settings[settingKey('_gradient')]=gradient;return true;}
 				var imageMatch=String(value||'').match(/url\((['"]?)(.*?)\1\)/i);
 				if(!imageMatch||!imageMatch[2]) return false;
 				ensureObject(settings,settingKey('_background')).image={url:imageMatch[2]};

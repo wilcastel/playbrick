@@ -83,7 +83,7 @@
   "values": {
     "background-color": ["transparent", "currentColor", "var(--", "#ffffff", "#000000"],
     "background": ["transparent", "currentColor", "var(--", "#ffffff", "#000000"],
-    "background-image": ["url(\"\")"],
+    "background-image": ["url(\"\")", "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", "repeating-linear-gradient(45deg, #000 0%, #000 10%, #fff 10%, #fff 20%)"],
     "background-position": ["top left", "top center", "top right", "center left", "center center", "center right", "bottom left", "bottom center", "bottom right", "50% 50%"],
     "background-size": ["auto", "cover", "contain", "100% auto", "100% 100%"],
     "background-repeat": ["no-repeat", "repeat", "repeat-x", "repeat-y"],

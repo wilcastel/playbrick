@@ -55,6 +55,7 @@ class BuilderPanelTest extends TestCase {
 		$this->assertNotContains( 'masonry-layout', $completions['properties'] );
 		$this->assertContains( 'center center', $completions['values']['background-position'] );
 		$this->assertContains( 'cover', $completions['values']['background-size'] );
+		$this->assertContains( 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', $completions['values']['background-image'] );
 		$this->assertContains( '16 / 9', $completions['values']['aspect-ratio'] );
 		$this->assertContains( 'balance', $completions['values']['text-wrap'] );
 		$this->assertContains( 'flex', $completions['values']['display'] );
