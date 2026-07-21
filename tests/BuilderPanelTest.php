@@ -41,6 +41,14 @@ class BuilderPanelTest extends TestCase {
 		$completions = playbrick_builder_panel_css_completions();
 
 		$this->assertContains( 'border-radius', $completions['properties'] );
+		$this->assertContains( 'aspect-ratio', $completions['properties'] );
+		$this->assertContains( 'font-variation-settings', $completions['properties'] );
+		$this->assertContains( 'white-space', $completions['properties'] );
+		$this->assertContains( 'text-wrap', $completions['properties'] );
+		$this->assertContains( 'text-shadow', $completions['properties'] );
+		$this->assertNotContains( 'masonry-layout', $completions['properties'] );
+		$this->assertContains( '16 / 9', $completions['values']['aspect-ratio'] );
+		$this->assertContains( 'balance', $completions['values']['text-wrap'] );
 		$this->assertContains( 'flex', $completions['values']['display'] );
 	}
 }

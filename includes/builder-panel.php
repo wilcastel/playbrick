@@ -203,9 +203,10 @@ function playbrick_builder_panel_output() {
 			var out=[];
 			if(!value||typeof value!=='object') return out;
 			var map={
-				'font-family':'font-family','font-size':'font-size','font-weight':'font-weight','line-height':'line-height','letter-spacing':'letter-spacing','text-align':'text-align','text-transform':'text-transform','font-style':'font-style','text-decoration':'text-decoration'
+				'font-family':'font-family','font-size':'font-size','font-weight':'font-weight','line-height':'line-height','letter-spacing':'letter-spacing','text-align':'text-align','text-transform':'text-transform','font-style':'font-style','font-variation-settings':'font-variation-settings','white-space':'white-space','text-wrap':'text-wrap','text-decoration':'text-decoration'
 			};
 			Object.keys(map).forEach(function(key){var val=maybeUnit(value[key]);if(val) out.push(map[key]+': '+val+';');});
+			out=out.concat(textShadowToDecls(value['text-shadow']));
 			var color=valueToCss(value.color);
 			if(color) out.push('color: '+color+';');
 			return out;
@@ -245,6 +246,22 @@ function playbrick_builder_panel_output() {
 			return parts.length>=2?['box-shadow: '+parts.join(' ')+';']:[];
 		}
 
+		function textShadowToDecls(value){
+			if(!value) return [];
+			if(typeof value==='string') return value?['text-shadow: '+value+';']:[];
+			if(typeof value!=='object') return [];
+			var values=value.values||value;
+			var parts=[];
+			['offsetX','offsetY','blur'].forEach(function(key){var val=maybeUnit(values[key]);parts.push(val||'0');});
+			var color=valueToCss(value.color||values.color);
+			parts.push(color||'transparent');
+			return ['text-shadow: '+parts.join(' ')+';'];
+		}
+
+		function aspectRatioValue(value){
+			return String(valueToCss(value)||'').trim().replace(/\s*:\s*/g,' / ').replace(/\s*\/\s*/g,' / ');
+		}
+
 		function simpleDecl(property, value){var val=maybeUnit(value);return val?[property+': '+val+';']:[];}
 		function settingKey(base){var bp=getBreakpoint();return !bp||bp==='desktop'?base:base+':'+bp;}
 		function ensureObject(obj,key){if(!obj[key]||typeof obj[key]!=='object'||Array.isArray(obj[key])) obj[key]={};return obj[key];}
@@ -278,6 +295,14 @@ function playbrick_builder_panel_output() {
 			});
 			if(values.length<2) return null;
 			return {inset:inset,values:{offsetX:values[0],offsetY:values[1],blur:values[2]||'0px',spread:values[3]||'0px'},color:colorSetting(extracted.color||'rgba(0,0,0,0.2)')};
+		}
+		function splitTextShadow(value){
+			value=String(value||'').trim();
+			if(!value) return null;
+			if(value.toLowerCase()==='none') return {values:{offsetX:'0',offsetY:'0',blur:'0'},color:colorSetting('transparent')};
+			var shadow=splitShadow(value);
+			if(!shadow) return null;
+			return {values:{offsetX:shadow.values.offsetX,offsetY:shadow.values.offsetY,blur:shadow.values.blur},color:shadow.color};
 		}
 
 		function isIgnoredSetting(base){return base.indexOf('_cssCustom')===0||base==='_cssGlobalClasses'||base==='_cssClasses'||base==='_cssGlobalClassesProps'||base==='_cssGlobalClassesPropsReplace';}
@@ -316,6 +341,7 @@ function playbrick_builder_panel_output() {
 				else if(base==='_height') out=out.concat(simpleDecl('height',value));
 				else if(base==='_heightMin') out=out.concat(simpleDecl('min-height',value));
 				else if(base==='_heightMax') out=out.concat(simpleDecl('max-height',value));
+				else if(base==='_aspectRatio') out=out.concat(simpleDecl('aspect-ratio',aspectRatioValue(value)));
 				else if(base==='_display') out=out.concat(simpleDecl('display',value));
 				else if(base==='_position') out=out.concat(simpleDecl('position',value));
 				else if(base==='_top') out=out.concat(simpleDecl('top',value));
@@ -323,12 +349,25 @@ function playbrick_builder_panel_output() {
 				else if(base==='_bottom') out=out.concat(simpleDecl('bottom',value));
 				else if(base==='_left') out=out.concat(simpleDecl('left',value));
 				else if(base==='_zIndex') out=out.concat(simpleDecl('z-index',value));
+				else if(base==='_order') out=out.concat(simpleDecl('order',value));
+				else if(base==='_visibility') out=out.concat(simpleDecl('visibility',value));
 				else if(base==='_overflow') out=out.concat(simpleDecl('overflow',value));
 				else if(base==='_opacity') out=out.concat(simpleDecl('opacity',value));
+				else if(base==='_cursor') out=out.concat(simpleDecl('cursor',value));
+				else if(base==='_isolation') out=out.concat(simpleDecl('isolation',value));
+				else if(base==='_mixBlendMode') out=out.concat(simpleDecl('mix-blend-mode',value));
+				else if(base==='_pointerEvents') out=out.concat(simpleDecl('pointer-events',value));
+				else if(base==='_perspective') out=out.concat(simpleDecl('perspective',value));
+				else if(base==='_perspectiveOrigin') out=out.concat(simpleDecl('perspective-origin',value));
 				else if(base==='_flexDirection') out=out.concat(simpleDecl('flex-direction',value));
+				else if(base==='_alignSelf') out=out.concat(simpleDecl('align-self',value));
 				else if(base==='_justifyContent') out=out.concat(simpleDecl('justify-content',value));
 				else if(base==='_alignItems') out=out.concat(simpleDecl('align-items',value));
 				else if(base==='_gap') out=out.concat(simpleDecl('gap',value));
+				else if(base==='_gridItemJustifySelf') out=out.concat(simpleDecl('justify-self',value));
+				else if(base==='_flexGrow') out=out.concat(simpleDecl('flex-grow',value));
+				else if(base==='_flexShrink') out=out.concat(simpleDecl('flex-shrink',value));
+				else if(base==='_flexBasis') out=out.concat(simpleDecl('flex-basis',value));
 				if(out.length>before) supported.push(base); else unsupported.push(key);
 			});
 			return {decls:out.filter(function(v,i,a){return a.indexOf(v)===i;}),supported:supported.filter(function(v,i,a){return a.indexOf(v)===i;}),unsupported:unsupported.filter(function(v,i,a){return a.indexOf(v)===i;})};
@@ -410,6 +449,12 @@ function playbrick_builder_panel_output() {
 			}
 			var property=segment.slice(0,colon).trim().toLowerCase();
 			var valuePart=segment.slice(colon+1);
+			var propertyValues=cssCompletions.values&&cssCompletions.values[property];
+			if(propertyValues&&propertyValues.length){
+				var leading=valuePart.match(/^\s*/)[0].length;
+				var valueText=valuePart.slice(leading);
+				return {mode:'value',from:pos-valuePart.length+leading,to:pos,query:valueText.trim().toLowerCase(),property:property};
+			}
 			var valueMatch=valuePart.match(/([^\s;]*)$/);
 			var valueText=valueMatch?valueMatch[1]:'';
 			return {mode:'value',from:pos-valueText.length,to:pos,query:valueText.toLowerCase(),property:property};
@@ -452,7 +497,8 @@ function playbrick_builder_panel_output() {
 		function updateAutocomplete(explicit){
 			if(!document.activeElement||document.activeElement!==custom){hideAutocomplete();return;}
 			var context=currentAutocompleteContext();
-			if(!explicit&&context.query.length<1){hideAutocomplete();return;}
+			var hasPropertyValues=context.mode==='value'&&cssCompletions.values&&cssCompletions.values[context.property]&&cssCompletions.values[context.property].length;
+			if(!explicit&&context.query.length<1&&!hasPropertyValues){hideAutocomplete();return;}
 			autocompleteRange={from:context.from,to:context.to,mode:context.mode};
 			autocompleteItems=completionOptions(context,explicit);
 			autocompleteIndex=0;
@@ -551,9 +597,18 @@ function playbrick_builder_panel_output() {
 				settings[settingKey('_boxShadow')]=shadow;
 				return true;
 			}
-			var direct={width:'_width','min-width':'_widthMin','max-width':'_widthMax',height:'_height','min-height':'_heightMin','max-height':'_heightMax',display:'_display',position:'_position',top:'_top',right:'_right',bottom:'_bottom',left:'_left','z-index':'_zIndex',overflow:'_overflow',opacity:'_opacity','flex-direction':'_flexDirection','justify-content':'_justifyContent','align-items':'_alignItems',gap:'_gap'};
+			if(prop==='text-shadow'){
+				var textShadow=splitTextShadow(value);if(!textShadow) return false;
+				ensureObject(settings,settingKey('_typography'))['text-shadow']=textShadow;
+				return true;
+			}
+			if(prop==='aspect-ratio'){
+				settings[settingKey('_aspectRatio')]=aspectRatioValue(value);
+				return true;
+			}
+			var direct={width:'_width','min-width':'_widthMin','max-width':'_widthMax',height:'_height','min-height':'_heightMin','max-height':'_heightMax',display:'_display',position:'_position',top:'_top',right:'_right',bottom:'_bottom',left:'_left','z-index':'_zIndex',order:'_order',visibility:'_visibility',overflow:'_overflow',opacity:'_opacity',cursor:'_cursor',isolation:'_isolation','mix-blend-mode':'_mixBlendMode','pointer-events':'_pointerEvents',perspective:'_perspective','perspective-origin':'_perspectiveOrigin','flex-direction':'_flexDirection','align-self':'_alignSelf','justify-content':'_justifyContent','align-items':'_alignItems',gap:'_gap','justify-self':'_gridItemJustifySelf','flex-grow':'_flexGrow','flex-shrink':'_flexShrink','flex-basis':'_flexBasis'};
 			if(direct[prop]){settings[settingKey(direct[prop])]=value;return true;}
-			var typeMap={'font-family':'font-family','font-size':'font-size','font-weight':'font-weight','line-height':'line-height','letter-spacing':'letter-spacing','text-align':'text-align','text-transform':'text-transform','font-style':'font-style','text-decoration':'text-decoration'};
+			var typeMap={'font-family':'font-family','font-size':'font-size','font-weight':'font-weight','line-height':'line-height','letter-spacing':'letter-spacing','text-align':'text-align','text-transform':'text-transform','font-style':'font-style','font-variation-settings':'font-variation-settings','white-space':'white-space','text-wrap':'text-wrap','text-decoration':'text-decoration'};
 			if(typeMap[prop]){ensureObject(settings,settingKey('_typography'))[typeMap[prop]]=value;return true;}
 			if(prop==='color'){ensureObject(settings,settingKey('_typography')).color=colorSetting(value);return true;}
 			return false;
