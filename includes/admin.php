@@ -74,6 +74,8 @@ function playbrick_settings_page() {
       <div class="notice notice-error is-dismissible"><p>Enqueue file not found inside the child theme.</p></div>
     <?php elseif ($error === 'child_theme_file_forbidden'): ?>
       <div class="notice notice-error is-dismissible"><p>Enqueue file must stay inside the configured child theme.</p></div>
+    <?php elseif ($error === 'child_theme_write_failed'): ?>
+      <div class="notice notice-error is-dismissible"><p>Could not write the child-theme enqueue files. Check child theme permissions.</p></div>
     <?php elseif ($error === 'scaffold_repair_failed'): ?>
       <div class="notice notice-error is-dismissible"><p>Could not repair the playground scaffold. Check that the selected scaffold mode exists in the plugin.</p></div>
     <?php endif; ?>
@@ -102,7 +104,7 @@ function playbrick_settings_page() {
           <th scope="row"><label>Environment</label></th>
           <td>
             <select name="playbrick_env">
-              <option value="dev"  <?php selected($env, 'dev');  ?>>Development — serves dev.css / dev.js</option>
+              <option value="dev"  <?php selected($env, 'dev');  ?>>Development — serves playground dev assets</option>
               <option value="prod" <?php selected($env, 'prod'); ?>>Production  — serves style.min.css / script.min.js</option>
             </select>
           </td>
@@ -340,20 +342,33 @@ function playbrick_generate_child_theme_enqueue() {
       wp_redirect(admin_url('options-general.php?page=playbrick&error=child_theme_file_forbidden'));
       exit;
     }
-    playbrick_append_php_snippet($target, $snippet);
+    if (!playbrick_append_php_snippet($target, $snippet)) {
+      wp_redirect(admin_url('options-general.php?page=playbrick&error=child_theme_write_failed'));
+      exit;
+    }
   } else {
     $includes_dir = $child_theme . '/includes';
-    wp_mkdir_p($includes_dir);
+    if (!is_dir($includes_dir) && !wp_mkdir_p($includes_dir)) {
+      wp_redirect(admin_url('options-general.php?page=playbrick&error=child_theme_write_failed'));
+      exit;
+    }
     $target = $includes_dir . '/playbrick-enqueue.php';
 
     $marker  = '// PlayBrick child-theme enqueue snippet — do not edit manually.';
     $content = "<?php\n" . $marker . "\n" . $snippet . "\n";
-    file_put_contents($target, $content, LOCK_EX);
+    if (file_put_contents($target, $content, LOCK_EX) === false) {
+      wp_redirect(admin_url('options-general.php?page=playbrick&error=child_theme_write_failed'));
+      exit;
+    }
 
     $functions_path = $child_theme . '/functions.php';
     if (file_exists($functions_path)) {
       $require_line = "require_once get_stylesheet_directory() . '/includes/playbrick-enqueue.php';";
       $functions_content = file_get_contents($functions_path);
+      if ($functions_content === false) {
+        wp_redirect(admin_url('options-general.php?page=playbrick&error=child_theme_write_failed'));
+        exit;
+      }
       if (strpos($functions_content, $require_line) === false) {
         $functions_content = rtrim($functions_content);
         if (substr($functions_content, -2) === '?>') {
@@ -361,7 +376,10 @@ function playbrick_generate_child_theme_enqueue() {
         } else {
           $functions_content .= "\n" . $require_line . "\n";
         }
-        file_put_contents($functions_path, $functions_content, LOCK_EX);
+        if (file_put_contents($functions_path, $functions_content, LOCK_EX) === false) {
+          wp_redirect(admin_url('options-general.php?page=playbrick&error=child_theme_write_failed'));
+          exit;
+        }
       }
     }
   }

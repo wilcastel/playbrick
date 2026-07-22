@@ -140,9 +140,12 @@ PHP;
 function playbrick_append_php_snippet( $file, $snippet ) {
 	$marker  = '// PlayBrick child-theme enqueue snippet — do not edit manually.';
 	$content = file_get_contents( $file );
+	if ( $content === false ) {
+		return false;
+	}
 
 	if ( strpos( $content, $marker ) !== false ) {
-		return;
+		return true;
 	}
 
 	$snippet = "\n" . $marker . "\n" . $snippet;
@@ -154,5 +157,5 @@ function playbrick_append_php_snippet( $file, $snippet ) {
 		$content = $trimmed . $snippet;
 	}
 
-	file_put_contents( $file, $content, LOCK_EX );
+	return file_put_contents( $file, $content, LOCK_EX ) !== false;
 }

@@ -13,6 +13,7 @@ var terser      = require('terser');
 var ROOT    = __dirname;
 var CSS_IN  = path.join(ROOT, 'dev.css');
 var JS_IN   = path.join(ROOT, 'dev.js');
+var IS_WATCH = process.argv.includes('--watch');
 
 // Load project config (playbrick.config.js) — falls back to dist/
 var OUT_DIR = path.join(ROOT, 'dist');
@@ -155,10 +156,15 @@ function buildCSS() {
   return postcss([tailwindcss(), cssnano({ preset: 'default' })])
     .process(src, { from: CSS_IN, to: CSS_OUT })
     .then(function (result) {
-      ensureDir(OUT_DIR);
-      fs.writeFileSync(CSS_OUT, result.css);
       fs.writeFileSync(CSS_DEV_OUT, result.css);
       var kb = (Buffer.byteLength(result.css, 'utf8') / 1024).toFixed(1);
+      if (IS_WATCH) {
+        console.log('[' + stamp() + '] CSS  →  dev.built.css  (' + kb + ' kB)');
+        return;
+      }
+
+      ensureDir(OUT_DIR);
+      fs.writeFileSync(CSS_OUT, result.css);
       console.log('[' + stamp() + '] CSS  →  style.min.css + dev.built.css  (' + kb + ' kB)');
     });
 }
@@ -173,6 +179,11 @@ function buildJS() {
     format:   { comments: false }
   }).then(function (result) {
     if (result.error) throw result.error;
+    if (IS_WATCH) {
+      console.log('[' + stamp() + '] JS   →  dev.js  (served raw)');
+      return;
+    }
+
     ensureDir(OUT_DIR);
     fs.writeFileSync(JS_OUT, result.code);
     var kb = (Buffer.byteLength(result.code, 'utf8') / 1024).toFixed(1);
@@ -196,7 +207,7 @@ build();
 
 // ── watch mode ────────────────────────────────────────────────────────────────
 
-if (process.argv.includes('--watch')) {
+if (IS_WATCH) {
   var chokidar = require('chokidar');
 
   chokidar

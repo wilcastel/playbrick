@@ -20,4 +20,9 @@ $raw_path = $result['raw_path'] ?? '';
 $custom_css_path = $result['custom_css_path'] ?? '';
 $theme_css_path  = $result['theme_css_path'] ?? '';
 
+if ( ! $path ) {
+	fwrite( STDERR, "[PlayBrick] Could not write Bricks source files. Check that the playground .playbrick directory is writable.\n" );
+	exit( 1 );
+}
+
 fwrite( STDOUT, "[PlayBrick] Exported {$count} Bricks classes to {$path}" . ( $raw_path ? ", {$raw_path}" : '' ) . ( $custom_css_path ? ", {$custom_css_path}" : '' ) . ( $theme_css_path ? ", {$theme_css_path}" : '' ) . "\n" );
