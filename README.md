@@ -67,11 +67,11 @@ Reference files in `src/` are not included in the production build. Author Brick
 ```bash
 corepack enable     # if pnpm is not available in this shell
 pnpm install        # first time only
-pnpm run build      # bundle + minify → output directory
-pnpm run watch      # auto-rebuild on save
+pnpm run watch      # dev mode → writes dev.built.css in the playground and refreshes Bricks
+pnpm run build      # production → writes minified files to the output directory
 ```
 
-In Tailwind mode, each build first exports CSS classes stored in Bricks Builder to `playground/.playbrick/bricks-sources.html` and `playground/.playbrick/bricks-sources.txt`, plus global-class Custom CSS to `playground/.playbrick/bricks-custom.css`. Tailwind reads the source files through `@source`, so utilities typed inside the Builder are included in `dev.built.css` and `style.min.css`. The `.txt` source preserves advanced Tailwind utilities such as arbitrary variants and values without HTML escaping. The generated CSS file lets Custom CSS from the PlayBrick CSS Panel use Tailwind directives such as `@apply`. While `pnpm run watch` is running, PlayBrick also checks Bricks for class changes, rebuilds when generated sources change, and updates the loaded `dev.built.css` link in the browser and same-origin Bricks canvas iframes through `playground/playbrick.reload.json`.
+In Tailwind mode, each build first exports CSS classes stored in Bricks Builder to `.playbrick/bricks-sources.html` and `.playbrick/bricks-sources.txt`, plus global-class Custom CSS to `.playbrick/bricks-custom.css`. Bricks Style Manager variables and color palette tokens are exported to `.playbrick/bricks-theme.css` as Tailwind `@theme inline` tokens. Do not edit Bricks-generated files under `wp-content/uploads/bricks/css`; Bricks Style Manager is the source of truth, and PlayBrick mirrors those variables into Tailwind. For example, Bricks variables like `--space-m`, `--text-xl`, `--color-primary`, and `--card-radius` become Tailwind utilities such as `p-m`, `text-xl`, `bg-primary`, and `rounded-card` for use in `@apply`. Builds also write `.playbrick/tailwind-utilities.json` so the CSS Panel can autocomplete those project utilities. While `pnpm run watch` is running, PlayBrick also checks Bricks for class changes, rebuilds when generated sources change, and updates the loaded `dev.built.css` link in the browser and same-origin Bricks canvas iframes through `playbrick.reload.json`.
 
 ### PlayBrick CSS panel MVP
 
