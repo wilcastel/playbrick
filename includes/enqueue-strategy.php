@@ -43,10 +43,24 @@ function playbrick_is_child_theme_strategy( $settings = null ) {
  * @return string URL.
  */
 function playbrick_path_to_url( $path ) {
-	$abspath = untrailingslashit( ABSPATH );
-	$home    = untrailingslashit( get_home_url() );
-	$path    = untrailingslashit( $path );
-	return str_replace( $abspath, $home, $path );
+	$path = untrailingslashit( $path );
+	$path_norm = wp_normalize_path( $path );
+	$upload = wp_upload_dir();
+	$roots = [
+		[ untrailingslashit( $upload['basedir'] ), untrailingslashit( $upload['baseurl'] ) ],
+		[ untrailingslashit( WP_CONTENT_DIR ), untrailingslashit( content_url() ) ],
+		[ untrailingslashit( ABSPATH ), untrailingslashit( get_home_url() ) ],
+	];
+
+	foreach ( $roots as $root ) {
+		$base_path = wp_normalize_path( $root[0] );
+		if ( $path_norm === $base_path || strpos( $path_norm, $base_path . '/' ) === 0 ) {
+			$relative = ltrim( substr( $path_norm, strlen( $base_path ) ), '/' );
+			return $relative === '' ? $root[1] : $root[1] . '/' . $relative;
+		}
+	}
+
+	return str_replace( untrailingslashit( ABSPATH ), untrailingslashit( get_home_url() ), $path );
 }
 
 /**
@@ -68,7 +82,8 @@ add_action( 'wp_enqueue_scripts', function () {
 
 	$env             = $settings['env']             ?? 'dev';
 	$mode            = $settings['scaffold_mode']     ?? 'classic';
-	$playground_path = $settings['playground_path']   ?? ( ABSPATH . 'playground' );
+	$default_playground_path = rtrim( WP_CONTENT_DIR, '/\\' ) . '/playground';
+	$playground_path = $settings['playground_path']   ?? $default_playground_path;
 	$out_dir         = $settings['out_dir']           ?? ( wp_upload_dir()['basedir'] . '/assets' );
 
 	if ( ! function_exists( 'playbrick_path_to_url' ) ) {
@@ -88,25 +103,8 @@ add_action( 'wp_enqueue_scripts', function () {
 			$css_url = $playground_url . '/dev.css';
 		}
 	} else {
-		$upload  = wp_upload_dir();
-		$basedir = untrailingslashit( $upload['basedir'] );
 		$out_dir = untrailingslashit( $out_dir );
-
-		if ( function_exists( 'wp_normalize_path' ) ) {
-			$basedir_norm = wp_normalize_path( $basedir );
-			$out_dir_norm = wp_normalize_path( $out_dir );
-		} else {
-			$basedir_norm = str_replace( '\\', '/', $basedir );
-			$out_dir_norm = str_replace( '\\', '/', $out_dir );
-		}
-
-		if ( strpos( $out_dir_norm, $basedir_norm ) === 0 ) {
-			$subdir = ltrim( substr( $out_dir_norm, strlen( $basedir_norm ) ), '/' );
-		} else {
-			$subdir = basename( $out_dir );
-		}
-
-		$base    = $upload['baseurl'] . '/' . $subdir;
+		$base     = playbrick_path_to_url( $out_dir );
 		$css_path = $out_dir . '/style.min.css';
 		$js_path  = $out_dir . '/script.min.js';
 		$css_url = $base . '/style.min.css';

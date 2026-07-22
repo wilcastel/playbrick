@@ -12,7 +12,7 @@ function playbrick_enqueue_assets() {
 
   $env             = $settings['env'] ?? 'dev';
   $mode            = playbrick_scaffold_mode( $settings );
-  $playground_path = $settings['playground_path'] ?? (ABSPATH . 'playground');
+  $playground_path = $settings['playground_path'] ?? playbrick_default_playground_path();
   $out_dir         = $settings['out_dir'] ?? (wp_upload_dir()['basedir'] . '/assets');
 
   if ($env === 'dev') {

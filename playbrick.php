@@ -30,10 +30,12 @@ function playbrick_activate() {
     update_option('playbrick_settings', [
       'env'              => 'dev',
       'scaffold_mode'    => 'classic',
-      'playground_path'  => ABSPATH . 'playground',
+      'playground_path'  => playbrick_default_playground_path(),
       'out_dir'          => $upload['basedir'] . '/assets',
       'enqueue_strategy' => 'plugin',
     ]);
   }
-  playbrick_create_scaffold();
+  if ( ! playbrick_create_scaffold() ) {
+    wp_die( 'PlayBrick could not create the playground scaffold. Make sure wp-content is writable, then activate the plugin again.' );
+  }
 }

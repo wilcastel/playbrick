@@ -21,7 +21,7 @@ function playbrick_settings_page() {
   $settings         = get_option('playbrick_settings', []);
   $env              = $settings['env']              ?? 'dev';
   $scaffold_mode    = playbrick_scaffold_mode( $settings );
-  $playground_path  = $settings['playground_path']   ?? (ABSPATH . 'playground');
+  $playground_path  = $settings['playground_path']   ?? playbrick_default_playground_path();
   $out_dir          = $settings['out_dir']           ?? (wp_upload_dir()['basedir'] . '/assets');
   $enqueue_strategy = playbrick_get_enqueue_strategy( $settings );
   $child_theme      = $settings['child_theme']      ?? '';
@@ -124,7 +124,7 @@ function playbrick_settings_page() {
           <th scope="row"><label>Playground path</label></th>
           <td>
             <input type="text" name="playbrick_playground_path" value="<?php echo esc_attr($playground_path); ?>" class="large-text" />
-            <p class="description">Absolute path to the playground folder. Default: <code><?php echo esc_html(ABSPATH . 'playground'); ?></code></p>
+            <p class="description">Absolute path to the playground folder. Default: <code><?php echo esc_html(playbrick_default_playground_path()); ?></code></p>
           </td>
         </tr>
 
@@ -262,7 +262,7 @@ function playbrick_generate_config() {
   if (!current_user_can('manage_options')) wp_die('Unauthorized');
 
   $settings         = get_option('playbrick_settings', []);
-  $playground_path  = $settings['playground_path'] ?? (ABSPATH . 'playground');
+  $playground_path  = $settings['playground_path'] ?? playbrick_default_playground_path();
   $out_dir          = $settings['out_dir']         ?? (wp_upload_dir()['basedir'] . '/assets');
   $mode             = playbrick_scaffold_mode( $settings );
   $enqueue_strategy = playbrick_get_enqueue_strategy( $settings );
@@ -274,7 +274,15 @@ function playbrick_generate_config() {
            . "  enqueueStrategy: " . json_encode($enqueue_strategy) . ",\n"
            . "  wpLoadPath:      " . json_encode(ABSPATH . 'wp-load.php') . ",\n"
            . "};\n";
-  file_put_contents($playground_path . '/playbrick.config.js', $content);
+  if ( !is_dir($playground_path) && !wp_mkdir_p($playground_path) ) {
+    wp_redirect(admin_url('options-general.php?page=playbrick&error=scaffold_repair_failed'));
+    exit;
+  }
+
+  if ( file_put_contents($playground_path . '/playbrick.config.js', $content) === false ) {
+    wp_redirect(admin_url('options-general.php?page=playbrick&error=scaffold_repair_failed'));
+    exit;
+  }
 
   wp_redirect(admin_url('options-general.php?page=playbrick&config=1'));
   exit;

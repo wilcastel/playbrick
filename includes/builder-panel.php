@@ -27,7 +27,7 @@ function playbrick_builder_panel_dynamic_tailwind_utilities() {
 	$settings = get_option( 'playbrick_settings', [] );
 	if ( ! is_array( $settings ) ) $settings = [];
 
-	$playground_path = ! empty( $settings['playground_path'] ) ? $settings['playground_path'] : ABSPATH . 'playground';
+	$playground_path = ! empty( $settings['playground_path'] ) ? $settings['playground_path'] : playbrick_default_playground_path();
 	$playground_path = rtrim( (string) $playground_path, '/\\' );
 	$path            = $playground_path . '/.playbrick/tailwind-utilities.json';
 

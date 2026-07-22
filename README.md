@@ -10,11 +10,11 @@ On activation it creates a local dev scaffold. You build components there, then 
 
 1. Clone or download the plugin into `wp-content/plugins/playbrick/`
 2. Activate it from **Plugins → Installed Plugins**
-3. On activation the plugin creates a `playground/` folder in your WordPress root with the full scaffold
+3. On activation the plugin creates `wp-content/playground/` with the full scaffold
 
 ```
 wp-content/plugins/playbrick/   ← the plugin (this repo)
-playground/                     ← created on activation (your work goes here)
+wp-content/playground/          ← created on activation (your work goes here)
   ├── src/                      ← reference material only (Figma exports, screenshots, base HTML)
   ├── bricks/
   │   ├── base/                 ← variables.css · reset.css · global.css
@@ -38,7 +38,7 @@ Go to **Settings → PlayBrick**:
 | Setting | Description |
 |---------|-------------|
 | **Environment** | `dev` serves `dev.css`/`dev.js` directly. `prod` serves the minified files. |
-| **Playground path** | Absolute path to the playground folder (default: WP root + `playground/`) |
+| **Playground path** | Absolute path to the playground folder (default: `wp-content/playground/`) |
 | **Output directory** | Where `pnpm run build` outputs minified files (default: uploads + `assets/`) |
 | **Enqueue strategy** | `plugin` (default) — PlayBrick enqueues assets automatically. `child_theme` — the active child theme enqueues assets. |
 | **Child theme path** | Absolute path to the child theme. Only visible when **Child theme** strategy is selected. |

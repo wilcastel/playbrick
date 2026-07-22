@@ -82,6 +82,8 @@ class ChildThemeGenerationTest extends TestCase {
 		$this->assertStringContainsString( '}, 9999 );', $contents );
 		$this->assertStringContainsString( "( \$settings['enqueue_strategy'] ?? 'plugin' ) !== 'child_theme'", $contents );
 		$this->assertStringContainsString( "function_exists( 'playbrick_path_to_url' )", $contents );
+		$this->assertStringNotContainsString( 'playbrick_default_playground_path()', $contents );
+		$this->assertStringContainsString( '$base     = playbrick_path_to_url( $out_dir );', $contents );
 		$this->assertStringContainsString( "filemtime( \$css_path )", $contents );
 
 		$functions = file_get_contents( $theme_dir . '/functions.php' );

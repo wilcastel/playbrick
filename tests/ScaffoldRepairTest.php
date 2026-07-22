@@ -40,6 +40,10 @@ class ScaffoldRepairTest extends TestCase {
 		$this->assertSame( 'tailwind', playbrick_detect_scaffold_mode( $playground ) );
 	}
 
+	public function test_default_playground_path_uses_wp_content_dir(): void {
+		$this->assertSame( WP_CONTENT_DIR . '/playground', playbrick_default_playground_path() );
+	}
+
 	public function test_detects_mismatch_between_settings_and_playground(): void {
 		$playground = sys_get_temp_dir() . '/playbrick-scaffold-repair/detect-mismatch';
 		mkdir( $playground, 0777, true );
@@ -75,5 +79,20 @@ class ScaffoldRepairTest extends TestCase {
 		$this->assertStringContainsString( '@import "tailwindcss"', file_get_contents( $playground . '/dev.css' ) );
 		$this->assertSame( '.card{}', file_get_contents( $playground . '/bricks/components/card.css' ) );
 		$this->assertStringContainsString( "mode: 'tailwind'", file_get_contents( $playground . '/playbrick.config.js' ) );
+	}
+
+	public function test_repair_creates_missing_playground_directory(): void {
+		$playground = sys_get_temp_dir() . '/playbrick-scaffold-repair/new-tailwind-playground';
+
+		$result = playbrick_repair_scaffold( [
+			'scaffold_mode'   => 'tailwind',
+			'playground_path' => $playground,
+		] );
+
+		$this->assertTrue( $result );
+		$this->assertDirectoryExists( $playground );
+		$this->assertFileExists( $playground . '/build.js' );
+		$this->assertFileExists( $playground . '/bricks/base/global.css' );
+		$this->assertSame( 'tailwind', playbrick_detect_scaffold_mode( $playground ) );
 	}
 }

@@ -7,15 +7,19 @@ function playbrick_scaffold_mode( $settings = null ) {
   return in_array( $mode, [ 'classic', 'tailwind' ], true ) ? $mode : 'classic';
 }
 
+function playbrick_default_playground_path() {
+  return untrailingslashit( WP_CONTENT_DIR ) . '/playground';
+}
+
 function playbrick_create_scaffold() {
   $settings        = get_option('playbrick_settings', []);
-  $playground_path = $settings['playground_path'] ?? (ABSPATH . 'playground');
+  $playground_path = $settings['playground_path'] ?? playbrick_default_playground_path();
   $mode            = playbrick_scaffold_mode( $settings );
   $scaffold_dir    = PLAYBRICK_DIR . 'scaffold/' . $mode;
 
   if (!is_dir($scaffold_dir)) return;
 
-  playbrick_copy_dir($scaffold_dir, $playground_path);
+  if ( ! playbrick_copy_dir($scaffold_dir, $playground_path) ) return false;
 
   // Write playbrick.config.js if it doesn't exist yet — embed mode so build.js knows which pipeline to use
   $config_file = $playground_path . '/playbrick.config.js';
@@ -28,8 +32,10 @@ function playbrick_create_scaffold() {
              . "  enqueueStrategy: " . json_encode($enqueue_strategy) . ",\n"
              . "  wpLoadPath:      " . json_encode(ABSPATH . 'wp-load.php') . "\n"
              . "};\n";
-    file_put_contents($config_file, $content);
+    if ( file_put_contents($config_file, $content) === false ) return false;
   }
+
+  return true;
 }
 
 function playbrick_detect_scaffold_mode( $playground_path ) {
@@ -60,7 +66,7 @@ function playbrick_detect_scaffold_mode( $playground_path ) {
 function playbrick_scaffold_status( $settings = null ) {
   if ( $settings === null ) $settings = get_option('playbrick_settings', []);
 
-  $playground_path = $settings['playground_path'] ?? (ABSPATH . 'playground');
+  $playground_path = $settings['playground_path'] ?? playbrick_default_playground_path();
   $expected        = playbrick_scaffold_mode($settings);
   $actual          = playbrick_detect_scaffold_mode($playground_path);
 
@@ -74,12 +80,12 @@ function playbrick_scaffold_status( $settings = null ) {
 function playbrick_repair_scaffold( $settings = null ) {
   if ( $settings === null ) $settings = get_option('playbrick_settings', []);
 
-  $playground_path = $settings['playground_path'] ?? (ABSPATH . 'playground');
+  $playground_path = $settings['playground_path'] ?? playbrick_default_playground_path();
   $mode            = playbrick_scaffold_mode($settings);
   $scaffold_dir    = PLAYBRICK_DIR . 'scaffold/' . $mode;
 
   if ( !is_dir($scaffold_dir) ) return false;
-  if ( !is_dir($playground_path) ) wp_mkdir_p($playground_path);
+  if ( !is_dir($playground_path) && !wp_mkdir_p($playground_path) ) return false;
 
   $root_files = [
     'build.js',
@@ -93,19 +99,21 @@ function playbrick_repair_scaffold( $settings = null ) {
   foreach ( $root_files as $file ) {
     $src = $scaffold_dir . '/' . $file;
     if ( file_exists($src) ) {
-      copy($src, $playground_path . '/' . $file);
+      if ( !copy($src, $playground_path . '/' . $file) ) return false;
     }
   }
 
-  playbrick_copy_dir($scaffold_dir, $playground_path);
+  if ( ! playbrick_copy_dir($scaffold_dir, $playground_path) ) return false;
 
   return true;
 }
 
 function playbrick_copy_dir($src, $dst) {
-  if (!is_dir($dst)) wp_mkdir_p($dst);
+  if (!is_dir($dst) && !wp_mkdir_p($dst)) return false;
 
   $items = scandir($src);
+  if ( $items === false ) return false;
+
   foreach ($items as $item) {
     if ($item === '.' || $item === '..') continue;
 
@@ -113,12 +121,14 @@ function playbrick_copy_dir($src, $dst) {
     $dst_path = $dst . '/' . $item;
 
     if (is_dir($src_path)) {
-      playbrick_copy_dir($src_path, $dst_path);
+      if ( ! playbrick_copy_dir($src_path, $dst_path) ) return false;
     } else {
       // Never overwrite existing files — preserve the user's work
       if (!file_exists($dst_path)) {
-        copy($src_path, $dst_path);
+        if ( ! copy($src_path, $dst_path) ) return false;
       }
     }
   }
+
+  return true;
 }
