@@ -94,9 +94,12 @@ function playbrick_builder_panel_output() {
 		.playbrick-css-col{display:flex;flex-direction:column;min-width:0;min-height:0;border-right:1px solid rgba(255,255,255,.08)}
 		.playbrick-css-col:last-child{border-right:0}
 		.playbrick-css-label{height:28px;display:flex;align-items:center;padding:0 10px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#95a3b3;background:#1c242e;border-bottom:1px solid rgba(255,255,255,.08)}
+		#playbrick-utilities-row{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.08);background:#141b24}
+		#playbrick-utilities-input{display:block;width:100%;min-height:26px;max-height:110px;padding:5px 8px;border:1px solid rgba(255,255,255,.14);border-radius:4px;background:#0f141a;color:#d6deeb;font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;outline:0;resize:none;white-space:pre-wrap;word-break:break-word;overflow-y:auto}
+		#playbrick-utilities-input:focus{border-color:rgba(51,153,255,.45)}
 		#playbrick-generated-css,#playbrick-custom-css{flex:1;width:100%;min-height:0;margin:0;padding:12px;border:0;outline:0;background:#0f141a;color:#d6deeb;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;tab-size:2;white-space:pre;overflow:auto}
 		#playbrick-generated-css{color:#8fb7ff;background:#101720;user-select:text}
-		#playbrick-custom-css{resize:none;color:#d6deeb}
+		#playbrick-custom-css{resize:none;color:#d6deeb;white-space:pre-wrap;word-break:break-word;overflow-x:hidden}
 		#playbrick-css-autocomplete{position:absolute;display:none;z-index:1002;width:280px;max-height:190px;overflow:auto;background:#111820;border:1px solid rgba(255,255,255,.16);border-radius:6px;box-shadow:0 12px 32px rgba(0,0,0,.4);padding:4px;color:#d6deeb;font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
 		.playbrick-css-suggestion{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:5px 7px;border:0;border-radius:4px;background:transparent;color:#d6deeb;text-align:left;font:inherit;cursor:pointer}
 		.playbrick-css-suggestion:hover,.playbrick-css-suggestion.is-active{background:rgba(51,153,255,.18);color:#fff}
@@ -132,6 +135,9 @@ function playbrick_builder_panel_output() {
 			</div>
 			<div class="playbrick-css-col">
 				<div class="playbrick-css-label">Custom CSS (_cssCustom)</div>
+				<div id="playbrick-utilities-row">
+					<textarea id="playbrick-utilities-input" rows="1" autocomplete="off" spellcheck="false" placeholder="Tailwind utilities (auto @apply)…"></textarea>
+				</div>
 				<textarea id="playbrick-custom-css" spellcheck="false"></textarea>
 			</div>
 		</div>
@@ -150,6 +156,7 @@ function playbrick_builder_panel_output() {
 		var status=document.getElementById('playbrick-css-status');
 		var generated=document.getElementById('playbrick-generated-css');
 		var custom=document.getElementById('playbrick-custom-css');
+		var utilitiesInput=document.getElementById('playbrick-utilities-input');
 		var autocomplete=document.getElementById('playbrick-css-autocomplete');
 		var completionsData=document.getElementById('playbrick-css-completions-data');
 		var copyBtn=document.getElementById('playbrick-css-copy');
@@ -172,8 +179,15 @@ function playbrick_builder_panel_output() {
 		var autocompleteRange=null;
 		var writeTimer=null;
 		var isEditing=false;
+		var isEditingUtilities=false;
+		var utilitiesWriteTimer=null;
 
 		if(!panel||!generated||!custom) return;
+
+		function activeEditable(){
+			var el=document.activeElement;
+			return (el===custom||el===utilitiesInput)?el:null;
+		}
 
 		function clamp(value,min,max){return Math.max(min,Math.min(max,value));}
 		function panelMaxHeight(){return Math.max(240,Math.floor(window.innerHeight*0.8));}
@@ -577,6 +591,14 @@ function playbrick_builder_panel_output() {
 		}
 
 		function currentAutocompleteContext(){
+			var field=activeEditable()||custom;
+			if(field===utilitiesInput){
+				var uPos=field.selectionStart||0;
+				var uBefore=(field.value||'').slice(0,uPos);
+				var uMatch=uBefore.match(/([^\s]*)$/);
+				var uQuery=uMatch?uMatch[1]:'';
+				return {mode:'tailwind',from:uPos-uQuery.length,to:uPos,query:uQuery.toLowerCase(),property:''};
+			}
 			var pos=custom.selectionStart||0;
 			var text=custom.value||'';
 			var lineStart=text.lastIndexOf('\n',pos-1)+1;
@@ -622,13 +644,14 @@ function playbrick_builder_panel_output() {
 
 		function positionAutocomplete(){
 			if(!autocomplete) return;
-			var rect=custom.getBoundingClientRect();
+			var field=activeEditable()||custom;
+			var rect=field.getBoundingClientRect();
 			var panelRect=panel.getBoundingClientRect();
-			var before=(custom.value||'').slice(0,custom.selectionStart||0).split('\n');
+			var before=(field.value||'').slice(0,field.selectionStart||0).split('\n');
 			var lineHeight=18.6;
 			var charWidth=7.2;
-			var top=rect.top-panelRect.top+12+((before.length-1)*lineHeight)-custom.scrollTop+lineHeight;
-			var left=rect.left-panelRect.left+12+(before[before.length-1].length*charWidth)-custom.scrollLeft;
+			var top=rect.top-panelRect.top+12+((before.length-1)*lineHeight)-field.scrollTop+lineHeight;
+			var left=rect.left-panelRect.left+12+(before[before.length-1].length*charWidth)-field.scrollLeft;
 			top=Math.max(rect.top-panelRect.top+8,Math.min(top,rect.bottom-panelRect.top-20));
 			left=Math.max(rect.left-panelRect.left+8,Math.min(left,rect.right-panelRect.left-290));
 			autocomplete.style.top=top+'px';
@@ -643,7 +666,7 @@ function playbrick_builder_panel_output() {
 		}
 
 		function updateAutocomplete(explicit){
-			if(!document.activeElement||document.activeElement!==custom){hideAutocomplete();return;}
+			if(!activeEditable()){hideAutocomplete();return;}
 			var context=currentAutocompleteContext();
 			var hasPropertyValues=context.mode==='value'&&cssCompletions.values&&cssCompletions.values[context.property]&&cssCompletions.values[context.property].length;
 			if(!explicit&&context.query.length<1&&!hasPropertyValues&&context.mode!=='tailwind'){hideAutocomplete();return;}
@@ -658,16 +681,17 @@ function playbrick_builder_panel_output() {
 		function moveAutocomplete(delta){autocompleteIndex=(autocompleteIndex+delta+autocompleteItems.length)%autocompleteItems.length;renderAutocomplete();}
 		function applyAutocomplete(index){
 			if(!autocompleteRange||!autocompleteItems[index]) return;
+			var field=activeEditable()||custom;
 			var item=autocompleteItems[index];
 			var insert=item.label+(autocompleteRange.mode==='property'?': ':(autocompleteRange.mode==='tailwind'?' ':''));
-			var before=custom.value.slice(0,autocompleteRange.from);
-			var after=custom.value.slice(autocompleteRange.to);
-			custom.value=before+insert+after;
+			var before=field.value.slice(0,autocompleteRange.from);
+			var after=field.value.slice(autocompleteRange.to);
+			field.value=before+insert+after;
 			var cursor=before.length+insert.length;
-			custom.selectionStart=cursor;
-			custom.selectionEnd=cursor;
+			field.selectionStart=cursor;
+			field.selectionEnd=cursor;
 			hideAutocomplete();
-			custom.dispatchEvent(new Event('input',{bubbles:true}));
+			field.dispatchEvent(new Event('input',{bubbles:true}));
 		}
 
 		function parseCustomCss(cls,css){
@@ -797,9 +821,37 @@ function playbrick_builder_panel_output() {
 			return parts.concat(preserved||[]).join('\n\n');
 		}
 
+		function extractUtilities(value){
+			var match=String(value||'').match(/@apply\s+([^;\n]*)/i);
+			return match?match[1].trim():'';
+		}
+
+		function upsertApplyLine(value,utilities){
+			value=String(value||'');
+			var line='@apply '+utilities.trim()+';';
+			if(/@apply\s+[^;\n]*;?/i.test(value)) return value.replace(/@apply\s+[^;\n]*;?/i,line);
+			return value?(value.replace(/\s*$/,'')+'\n'+line):line;
+		}
+
+		function removeApplyLine(value){
+			return String(value||'').replace(/@apply\s+[^;\n]*;?\n?/i,'').replace(/\n{3,}/g,'\n\n').trim();
+		}
+
+		function autosizeUtilities(){
+			if(!utilitiesInput) return;
+			utilitiesInput.style.height='auto';
+			utilitiesInput.style.height=Math.min(utilitiesInput.scrollHeight,110)+'px';
+		}
+
+		function syncUtilitiesField(){
+			if(isEditingUtilities||!utilitiesInput) return;
+			utilitiesInput.value=extractUtilities(custom.value);
+			autosizeUtilities();
+		}
+
 		function sync(){
 			var cls=getActiveClass();
-			if(!cls||!cls.id||!cls.name){panel.classList.add('playbrick-no-class');currentClassId=null;title.textContent='PlayBrick CSS';statusHoldUntil=0;status.textContent='Select a Bricks global class';generated.textContent='';updateDiagnostics(null);if(!isEditing) custom.value='';return;}
+			if(!cls||!cls.id||!cls.name){panel.classList.add('playbrick-no-class');currentClassId=null;title.textContent='PlayBrick CSS';statusHoldUntil=0;status.textContent='Select a Bricks global class';generated.textContent='';updateDiagnostics(null);if(!isEditing) custom.value='';syncUtilitiesField();return;}
 			panel.classList.remove('playbrick-no-class');
 			var settings=cls.settings||{};
 			var key=cssKey();
@@ -812,6 +864,7 @@ function playbrick_builder_panel_output() {
 			generated.textContent=generatedCssFor(cls);
 			updateDiagnostics(cls);
 			if(!isEditing) custom.value=settings[key]||'';
+			syncUtilitiesField();
 			applyPreview(cls,settings[key]||'');
 		}
 
@@ -825,11 +878,13 @@ function playbrick_builder_panel_output() {
 			sync();
 		}
 
-		custom.addEventListener('focus',function(){isEditing=true;});
-		custom.addEventListener('blur',function(){setTimeout(hideAutocomplete,120);isEditing=false;sync();});
-		custom.addEventListener('input',function(){updateAutocomplete(false);clearTimeout(writeTimer);writeTimer=setTimeout(writeCustom,150);});
-		custom.addEventListener('click',function(){updateAutocomplete(false);});
-		custom.addEventListener('keydown',function(event){
+		function writeUtilities(){
+			var utilities=utilitiesInput.value.trim();
+			custom.value=utilities?upsertApplyLine(custom.value,utilities):removeApplyLine(custom.value);
+			writeCustom();
+		}
+
+		function handleAutocompleteKeydown(event){
 			if(autocompleteVisible()){
 				if(event.key==='ArrowDown'){event.preventDefault();moveAutocomplete(1);return;}
 				if(event.key==='ArrowUp'){event.preventDefault();moveAutocomplete(-1);return;}
@@ -837,7 +892,20 @@ function playbrick_builder_panel_output() {
 				if(event.key==='Escape'){event.preventDefault();hideAutocomplete();return;}
 			}
 			if(event.ctrlKey&&event.key===' '){event.preventDefault();updateAutocomplete(true);}
-		});
+		}
+
+		custom.addEventListener('focus',function(){isEditing=true;});
+		custom.addEventListener('blur',function(){setTimeout(hideAutocomplete,120);isEditing=false;sync();});
+		custom.addEventListener('input',function(){updateAutocomplete(false);clearTimeout(writeTimer);writeTimer=setTimeout(writeCustom,150);});
+		custom.addEventListener('click',function(){updateAutocomplete(false);});
+		custom.addEventListener('keydown',handleAutocompleteKeydown);
+		if(utilitiesInput){
+			utilitiesInput.addEventListener('focus',function(){isEditingUtilities=true;});
+			utilitiesInput.addEventListener('blur',function(){setTimeout(hideAutocomplete,120);isEditingUtilities=false;syncUtilitiesField();});
+			utilitiesInput.addEventListener('input',function(){autosizeUtilities();updateAutocomplete(false);clearTimeout(utilitiesWriteTimer);utilitiesWriteTimer=setTimeout(writeUtilities,150);});
+			utilitiesInput.addEventListener('click',function(){updateAutocomplete(false);});
+			utilitiesInput.addEventListener('keydown',handleAutocompleteKeydown);
+		}
 		if(autocomplete) autocomplete.addEventListener('mousedown',function(event){
 			var button=event.target.closest&&event.target.closest('.playbrick-css-suggestion');
 			if(!button) return;
