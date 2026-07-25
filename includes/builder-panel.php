@@ -90,6 +90,7 @@ function playbrick_builder_panel_output() {
 		.playbrick-css-btn{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#d6deeb;border-radius:4px;font-size:11px;height:24px;padding:0 8px;cursor:pointer}
 		.playbrick-css-btn.is-primary{border-color:rgba(51,153,255,.45);background:rgba(51,153,255,.16);color:#b9dcff}
 		.playbrick-css-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+		.playbrick-css-btn-icon{width:24px;padding:0;font-size:13px;line-height:1;text-align:center}
 		#playbrick-css-body{display:grid;grid-template-columns:1fr 1fr;min-height:0;flex:1}
 		.playbrick-css-col{display:flex;flex-direction:column;min-width:0;min-height:0;border-right:1px solid rgba(255,255,255,.08)}
 		.playbrick-css-col:last-child{border-right:0}
@@ -120,11 +121,11 @@ function playbrick_builder_panel_output() {
 			<button type="button" class="playbrick-css-btn" id="playbrick-css-copy">Copy generated</button>
 			<button type="button" class="playbrick-css-btn" id="playbrick-css-copy-declarations">Copy declarations</button>
 			<button type="button" class="playbrick-css-btn is-primary" id="playbrick-css-apply-visual">Apply to visual</button>
-			<button type="button" class="playbrick-css-btn" id="playbrick-css-clear-custom">Clear custom</button>
-			<button type="button" class="playbrick-css-btn" id="playbrick-css-smaller">Smaller</button>
-			<button type="button" class="playbrick-css-btn" id="playbrick-css-bigger">Bigger</button>
-			<button type="button" class="playbrick-css-btn" id="playbrick-css-refresh">Refresh</button>
-			<button type="button" class="playbrick-css-btn" id="playbrick-css-close">Close</button>
+			<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-clear-custom" title="Clear custom">🧹</button>
+			<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-smaller" title="Smaller">−</button>
+			<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-bigger" title="Bigger">+</button>
+			<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-refresh" title="Refresh">↻</button>
+			<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-close" title="Close">×</button>
 			<span id="playbrick-css-status">Select a Bricks global class</span>
 		</div>
 		<div id="playbrick-css-body">
