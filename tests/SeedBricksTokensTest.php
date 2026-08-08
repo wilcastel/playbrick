@@ -365,4 +365,53 @@ class SeedBricksTokensTest extends TestCase {
 
 		$this->assertStringContainsString( 'Bricks Builder does not appear to be active', $html );
 	}
+
+	// --- Phase 5: non-goal regression — no activation-time seeding -------------
+
+	public function test_activation_never_seeds_bricks_color_palette_or_global_variables(): void {
+		if ( ! function_exists( 'playbrick_activate' ) ) {
+			require_once PLAYBRICK_DIR . 'playbrick.php';
+		}
+
+		// Falsy for 'playbrick_settings' simulates a genuine first activation
+		// (the branch that actually calls update_option); every other lookup
+		// falls back to its caller-supplied default, matching real get_option().
+		Monkey\Functions\when( 'get_option' )->alias( function ( $name, $default = false ) {
+			return $name === 'playbrick_settings' ? false : $default;
+		} );
+
+		Monkey\Functions\when( 'wp_upload_dir' )->justReturn( [ 'basedir' => sys_get_temp_dir() . '/playbrick-activate-uploads' ] );
+
+		$updated_option_names = [];
+		Monkey\Functions\when( 'update_option' )->alias( function ( $name, $value = null ) use ( &$updated_option_names ) {
+			$updated_option_names[] = $name;
+			return true;
+		} );
+
+		// playbrick_default_playground_path() reads WP_CONTENT_DIR directly (no
+		// get_option involved), so activation writes its scaffold into the real
+		// wp-content/playground under our test ABSPATH — harmless, cleaned below.
+		try {
+			playbrick_activate();
+		} finally {
+			$this->rmdir_recursive( WP_CONTENT_DIR . '/playground' );
+		}
+
+		$this->assertNotContains( 'bricks_color_palette', $updated_option_names );
+		$this->assertNotContains( 'BRICKS_DB_COLOR_PALETTE', $updated_option_names );
+		$this->assertNotContains( 'bricks_global_variables', $updated_option_names );
+	}
+
+	private function rmdir_recursive( string $dir ): void {
+		if ( ! is_dir( $dir ) ) return;
+
+		$items = new \RecursiveIteratorIterator(
+			new \RecursiveDirectoryIterator( $dir, \RecursiveDirectoryIterator::SKIP_DOTS ),
+			\RecursiveIteratorIterator::CHILD_FIRST
+		);
+		foreach ( $items as $item ) {
+			$item->isDir() ? rmdir( $item->getPathname() ) : unlink( $item->getPathname() );
+		}
+		rmdir( $dir );
+	}
 }
