@@ -81,7 +81,7 @@ function playbrick_builder_panel_output() {
 		#playbrick-css-panel *{box-sizing:border-box}
 		#playbrick-css-resize{position:absolute;left:0;right:0;top:-5px;height:10px;cursor:ns-resize;z-index:1}
 		#playbrick-css-resize:after{content:"";position:absolute;left:50%;top:3px;width:44px;height:3px;margin-left:-22px;border-radius:999px;background:rgba(255,255,255,.22)}
-		#playbrick-css-topbar{height:34px;display:flex;align-items:center;gap:10px;padding:0 10px;border-bottom:1px solid rgba(255,255,255,.08);background:#111820;font-size:12px}
+		#playbrick-css-topbar{height:34px;display:flex;align-items:center;gap:10px;padding:0 10px;border-bottom:1px solid rgba(255,255,255,.08);background:#111820;font-size:12px;cursor:move;user-select:none;-webkit-user-select:none}
 		#playbrick-css-title{font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 		#playbrick-css-status{margin-left:auto;color:#8a99a8;font-size:11px}
 		#playbrick-css-meta{display:flex;gap:6px;align-items:center;color:#8a99a8;font-size:11px}
@@ -153,6 +153,7 @@ function playbrick_builder_panel_output() {
 		if (window.location.href.indexOf('brickspreview=true') !== -1) return;
 
 		var panel=document.getElementById('playbrick-css-panel');
+		var topbar=document.getElementById('playbrick-css-topbar');
 		var title=document.getElementById('playbrick-css-title');
 		var status=document.getElementById('playbrick-css-status');
 		var generated=document.getElementById('playbrick-generated-css');
@@ -198,6 +199,29 @@ function playbrick_builder_panel_output() {
 			try{window.localStorage.setItem('playbrickCssPanelHeight',String(height));}catch(e){}
 		}
 		try{setPanelHeight(window.localStorage.getItem('playbrickCssPanelHeight')||300);}catch(e){setPanelHeight(300);}
+		function setPanelPosition(left,top){
+			var width=parseInt(panel.style.width,10)||panel.offsetWidth||480;
+			var height=parseInt(panel.style.height,10)||panel.offsetHeight||300;
+			left=clamp(left,0,Math.max(0,window.innerWidth-width));
+			top=clamp(top,0,Math.max(0,window.innerHeight-height));
+			panel.style.left=left+'px';
+			panel.style.top=top+'px';
+			panel.style.right='auto';
+			panel.style.bottom='auto';
+			try{window.localStorage.setItem('playbrickCssPanelPos',JSON.stringify({left:left,top:top,width:width}));}catch(e){}
+		}
+		(function restorePanelPosition(){
+			var saved=null;
+			try{saved=JSON.parse(window.localStorage.getItem('playbrickCssPanelPos')||'null');}catch(e){saved=null;}
+			if(!saved||typeof saved.left!=='number'||typeof saved.top!=='number') return;
+			var width=saved.width||(window.innerWidth-640);
+			var height=parseInt(panel.style.height,10)||300;
+			panel.style.width=width+'px';
+			panel.style.left=clamp(saved.left,0,Math.max(0,window.innerWidth-width))+'px';
+			panel.style.top=clamp(saved.top,0,Math.max(0,window.innerHeight-height))+'px';
+			panel.style.right='auto';
+			panel.style.bottom='auto';
+		})();
 		function setStatus(message,holdMs){status.textContent=message;statusHoldUntil=holdMs?Date.now()+holdMs:0;}
 		function syncStatus(message){if(Date.now()>statusHoldUntil) status.textContent=message;}
 		function readCompletions(){try{return completionsData?JSON.parse(completionsData.textContent||'{}'):{};}catch(e){return {};}}
@@ -919,6 +943,20 @@ function playbrick_builder_panel_output() {
 		if(resizeHandle) resizeHandle.addEventListener('mousedown',function(event){
 			event.preventDefault();
 			function move(moveEvent){setPanelHeight(window.innerHeight-moveEvent.clientY);}
+			function up(){document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);}
+			document.addEventListener('mousemove',move);
+			document.addEventListener('mouseup',up);
+		});
+		if(topbar) topbar.addEventListener('mousedown',function(event){
+			if(event.target.closest&&event.target.closest('.playbrick-css-btn')) return;
+			if(panel.classList.contains('playbrick-hidden')) return;
+			event.preventDefault();
+			var startLeft=panel.offsetLeft;
+			var startTop=panel.offsetTop;
+			var startX=event.clientX;
+			var startY=event.clientY;
+			panel.style.width=panel.offsetWidth+'px';
+			function move(moveEvent){setPanelPosition(startLeft+(moveEvent.clientX-startX),startTop+(moveEvent.clientY-startY));}
 			function up(){document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);}
 			document.addEventListener('mousemove',move);
 			document.addEventListener('mouseup',up);
