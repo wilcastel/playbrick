@@ -6,6 +6,7 @@ add_action('admin_post_playbrick_save_settings', 'playbrick_save_settings');
 add_action('admin_post_playbrick_generate_config', 'playbrick_generate_config');
 add_action('admin_post_playbrick_generate_child_theme_enqueue', 'playbrick_generate_child_theme_enqueue');
 add_action('admin_post_playbrick_repair_scaffold', 'playbrick_repair_scaffold_handler');
+add_action('admin_post_playbrick_seed_bricks_tokens', 'playbrick_seed_bricks_tokens');
 
 function playbrick_admin_menu() {
   add_options_page(
@@ -33,6 +34,7 @@ function playbrick_settings_page() {
   $generated = isset($_GET['child_theme_generated']);
   $repaired  = isset($_GET['scaffold_repaired']);
   $error     = $_GET['error'] ?? '';
+  $seeded    = $_GET['bricks_tokens_seeded'] ?? null;
 
   $child_theme_fields_class = $enqueue_strategy === 'child_theme' ? '' : 'hidden';
 
@@ -60,7 +62,21 @@ function playbrick_settings_page() {
       <div class="notice notice-success is-dismissible"><p>Playground scaffold repaired for the selected mode.</p></div>
     <?php endif; ?>
 
-    <?php if ($error === 'child_theme_fields'): ?>
+    <?php if ($seeded === 'all'): ?>
+      <div class="notice notice-success is-dismissible"><p>Bricks tokens seeded: color palette and global variables.</p></div>
+    <?php elseif ($seeded === 'palette'): ?>
+      <div class="notice notice-success is-dismissible"><p>Bricks tokens seeded: color palette seeded, global variables skipped (already populated).</p></div>
+    <?php elseif ($seeded === 'variables'): ?>
+      <div class="notice notice-success is-dismissible"><p>Bricks tokens seeded: color palette skipped (already populated), global variables seeded.</p></div>
+    <?php elseif ($seeded === 'none'): ?>
+      <div class="notice notice-info is-dismissible"><p>Bricks tokens: nothing to seed — both color palette and global variables are already populated.</p></div>
+    <?php endif; ?>
+
+    <?php if ($error === 'bricks_missing'): ?>
+      <div class="notice notice-error is-dismissible"><p>Bricks Builder does not appear to be active. Activate Bricks Builder, then try seeding again.</p></div>
+    <?php elseif ($error === 'bricks_seed_write_failed'): ?>
+      <div class="notice notice-error is-dismissible"><p>Could not write the seeded Bricks tokens. Check that Bricks options are writable, then try again.</p></div>
+    <?php elseif ($error === 'child_theme_fields'): ?>
       <div class="notice notice-error is-dismissible"><p>Child theme path and Enqueue file are required when the <strong>Child theme</strong> strategy is selected.</p></div>
     <?php elseif ($error === 'child_theme_strategy'): ?>
       <div class="notice notice-error is-dismissible"><p>Switch the enqueue strategy to <strong>Child theme</strong> before generating the enqueue file.</p></div>
@@ -193,6 +209,15 @@ function playbrick_settings_page() {
         <?php submit_button('Generate child-theme enqueue', 'secondary'); ?>
       </form>
     </div>
+
+    <hr />
+    <h2>Seed Bricks tokens</h2>
+    <p>Writes a starting color palette and global variables into Bricks' Style Manager options — only into options that are currently empty. Existing palette or variables are never modified.</p>
+    <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
+      <?php wp_nonce_field('playbrick_seed_bricks_tokens'); ?>
+      <input type="hidden" name="action" value="playbrick_seed_bricks_tokens" />
+      <?php submit_button('Seed Bricks tokens', 'secondary'); ?>
+    </form>
 
     <hr />
     <h2>Build commands</h2>
@@ -385,6 +410,61 @@ function playbrick_generate_child_theme_enqueue() {
   }
 
   wp_redirect(admin_url('options-general.php?page=playbrick&child_theme_generated=1'));
+  exit;
+}
+
+/**
+ * Seed a starting Bricks Style Manager token set (1 color palette group,
+ * 20 global variables) into Bricks' own options — only into options that are
+ * currently empty (D2: skip-if-populated, evaluated independently per option).
+ *
+ * All Bricks write-shape literals live in includes/bricks-tokens-seed.php
+ * (DC-1) — this handler only does auth, I/O, and the typed redirect.
+ *
+ * @param bool|null $bricks_available Optional. Inject to bypass auto-detection
+ *                                     in tests (A2); null = auto-detect.
+ */
+function playbrick_seed_bricks_tokens( $bricks_available = null ) {
+  check_admin_referer('playbrick_seed_bricks_tokens');
+  if (!current_user_can('manage_options')) wp_die('Unauthorized');
+
+  $available = $bricks_available ?? ( defined('BRICKS_VERSION') || defined('BRICKS_DB_COLOR_PALETTE') );
+  if (!$available) {
+    wp_redirect(admin_url('options-general.php?page=playbrick&error=bricks_missing'));
+    exit;
+  }
+
+  $plan = playbrick_bricks_token_seed_plan(
+    playbrick_get_bricks_color_palette(),
+    playbrick_get_bricks_global_variables()
+  );
+
+  $option_names = [
+    'palette'   => playbrick_bricks_color_palette_option_name(),
+    'variables' => 'bricks_global_variables',
+  ];
+
+  $seeded = [];
+  foreach ( $option_names as $key => $option_name ) {
+    if ( $plan[ $key ]['action'] !== 'seed' ) continue;
+
+    if ( ! update_option( $option_name, $plan[ $key ]['value'] ) ) {
+      wp_redirect(admin_url('options-general.php?page=playbrick&error=bricks_seed_write_failed'));
+      exit;
+    }
+
+    $seeded[] = $key;
+  }
+
+  if ( count( $seeded ) === 2 ) {
+    $status = 'all';
+  } elseif ( count( $seeded ) === 1 ) {
+    $status = $seeded[0];
+  } else {
+    $status = 'none';
+  }
+
+  wp_redirect(admin_url('options-general.php?page=playbrick&bricks_tokens_seeded=' . $status));
   exit;
 }
 
