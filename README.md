@@ -45,6 +45,18 @@ Go to **Settings → PlayBrick**:
 | **Enqueue file** | PHP file inside the child theme where the enqueue hook is written. Only visible when **Child theme** strategy is selected. |
 | **Generate config** | Writes `playbrick.config.js` to the playground with the current settings |
 | **Generate child-theme enqueue** | Writes the enqueue hook into the configured child theme file (only for **Child theme** strategy) |
+| **Seed Bricks tokens** | Seeds a starting Bricks Style Manager color palette and global variable set (see below) |
+
+### Seed Bricks tokens
+
+On a fresh install, Bricks' own Style Manager options (`bricks_color_palette` and `bricks_global_variables`) are empty, so `playbrick_build_bricks_theme_css()` has nothing to generate `@theme inline` tokens from. **Settings → PlayBrick → Seed Bricks tokens** writes a starting set:
+
+- **1 color palette group** with 6 colors, seeded into `bricks_color_palette` only (never as `color-*` global variables).
+- **20 global variables** (spacing, typography, radii, shadows), seeded into `bricks_global_variables`.
+
+Each option is evaluated and seeded **independently**: if `bricks_color_palette` already has data it is left untouched even if `bricks_global_variables` is empty (and vice versa); if both already have data, the button is a no-op. Seeding never merges into or overwrites existing values — it only fills empty options. Requires Bricks Builder to be active and a `manage_options` user.
+
+After seeding (or after editing tokens in Bricks Style Manager), run `pnpm run build` in the playground to regenerate the CSS with the new `@theme inline` tokens.
 
 ---
 
