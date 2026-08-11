@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design System Playground</title>
+  <style>
+    /* ============================================================
+       DESIGN TOKENS
+       Edit these variables as you build your design system.
+       Every component below consumes them, so changes here
+       propagate across the whole page.
+       ============================================================ */
+    :root {
+      /* Color palette */
+      --color-primary: #2563eb;
+      --color-primary-hover: #1d4ed8;
+      --color-secondary: #64748b;
+      --color-accent: #f59e0b;
+      --color-surface: #ffffff;
+      --color-surface-alt: #f8fafc;
+      --color-background: #f1f5f9;
+      --color-text: #1e293b;
+      --color-text-muted: #64748b;
+      --color-border: #e2e8f0;
+      --color-success: #16a34a;
+      --color-warning: #d97706;
+      --color-danger: #dc2626;
+      --color-info: #0891b2;
+
+      /* Typography */
+      --font-family-base: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --font-family-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --font-size-xs: 0.75rem;
+      --font-size-sm: 0.875rem;
+      --font-size-base: 1rem;
+      --font-size-lg: 1.125rem;
+      --font-size-xl: 1.25rem;
+      --font-size-2xl: 1.5rem;
+      --font-size-3xl: 1.875rem;
+      --font-size-4xl: 2.25rem;
+      --font-size-5xl: 3rem;
+      --line-height-tight: 1.25;
+      --line-height-base: 1.6;
+      --font-weight-normal: 400;
+      --font-weight-medium: 500;
+      --font-weight-bold: 700;
+
+      /* Spacing scale */
+      --space-1: 0.25rem;
+      --space-2: 0.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-5: 1.5rem;
+      --space-6: 2rem;
+      --space-8: 3rem;
+      --space-10: 4rem;
+
+      /* Radii */
+      --radius-sm: 0.25rem;
+      --radius-md: 0.5rem;
+      --radius-lg: 0.75rem;
+      --radius-full: 9999px;
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+      --shadow-md: 0 4px 8px rgba(15, 23, 42, 0.08);
+      --shadow-lg: 0 10px 24px rgba(15, 23, 42, 0.12);
+
+      /* Layout */
+      --container-max: 72rem;
+    }
+
+    /* ============================================================
+       BASE / RESET
+       ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-family-base);
+      font-size: var(--font-size-base);
+      line-height: var(--line-height-base);
+      color: var(--color-text);
+      background-color: var(--color-background);
+    }
+
+    img { max-width: 100%; height: auto; display: block; }
+
+    /* ============================================================
+       TYPOGRAPHY
+       ============================================================ */
+    h1, h2, h3, h4, h5, h6 {
+      line-height: var(--line-height-tight);
+      font-weight: var(--font-weight-bold);
+      margin: 0 0 var(--space-4);
+    }
+    h1 { font-size: var(--font-size-5xl); }
+    h2 { font-size: var(--font-size-4xl); }
+    h3 { font-size: var(--font-size-3xl); }
+    h4 { font-size: var(--font-size-2xl); }
+    h5 { font-size: var(--font-size-xl); }
+    h6 { font-size: var(--font-size-lg); }
+
+    p { margin: 0 0 var(--space-4); }
+
+    a {
+      color: var(--color-primary);
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+
+    blockquote {
+      margin: 0 0 var(--space-4);
+      padding: var(--space-4) var(--space-5);
+      border-left: 4px solid var(--color-primary);
+      background: var(--color-surface-alt);
+      color: var(--color-text-muted);
+      font-style: italic;
+    }
+
+    code, kbd, pre {
+      font-family: var(--font-family-mono);
+      font-size: var(--font-size-sm);
+    }
+    code {
+      background: var(--color-surface-alt);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 0.1em 0.35em;
+    }
+    pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: var(--space-4);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: inherit;
+    }
+    kbd {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-bottom-width: 2px;
+      border-radius: var(--radius-sm);
+      padding: 0.1em 0.4em;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--color-border);
+      margin: var(--space-8) 0;
+    }
+
+    /* ============================================================
+       LAYOUT
+       ============================================================ */
+    .container {
+      max-width: var(--container-max);
+      margin: 0 auto;
+      padding: 0 var(--space-4);
+    }
+
+    .section {
+      padding: var(--space-8) 0;
+    }
+
+    .section-label {
+      display: inline-block;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-bold);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-primary);
+      background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+      margin-bottom: var(--space-4);
+    }
+
+    /* CSS multi-column text flow */
+    .text-columns {
+      columns: 3;
+      column-gap: var(--space-6);
+      column-rule: 1px solid var(--color-border);
+    }
+
+    /* Grid columns */
+    .grid { display: grid; gap: var(--space-5); }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+    @media (max-width: 48rem) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .text-columns { columns: 1; }
+    }
+
+    /* ============================================================
+       BUTTONS
+       ============================================================ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-family: inherit;
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1;
+      padding: var(--space-3) var(--space-5);
+      border: 1px solid transparent;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      text-decoration: none;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+    .btn-primary { background: var(--color-primary); color: #fff; }
+    .btn-primary:hover { background: var(--color-primary-hover); text-decoration: none; }
+    .btn-secondary { background: var(--color-secondary); color: #fff; }
+    .btn-outline {
+      background: transparent;
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+    .btn-outline:hover { background: var(--color-primary); color: #fff; text-decoration: none; }
+    .btn-ghost { background: transparent; color: var(--color-primary); }
+    .btn-sm { font-size: var(--font-size-sm); padding: var(--space-2) var(--space-4); }
+    .btn-lg { font-size: var(--font-size-lg); padding: var(--space-4) var(--space-6); }
+    .btn:disabled, .btn[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      align-items: center;
+    }
+
+    /* ============================================================
+       CARDS
+       ============================================================ */
+    .card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .card-media img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+    .card-body { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); flex: 1; }
+    .card-title { margin: 0; font-size: var(--font-size-xl); }
+    .card-text { margin: 0; color: var(--color-text-muted); flex: 1; }
+    .card-footer {
+      padding: var(--space-4) var(--space-5);
+      border-top: 1px solid var(--color-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+    }
+    .card-horizontal { flex-direction: row; }
+    .card-horizontal .card-media { flex: 0 0 40%; }
+    .card-horizontal .card-media img { height: 100%; aspect-ratio: auto; }
+
+    /* ============================================================
+       BADGES / TAGS / ALERTS
+       ============================================================ */
+    .badge {
+      display: inline-block;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+    }
+    .badge-primary { background: color-mix(in srgb, var(--color-primary) 12%, transparent); color: var(--color-primary); }
+    .badge-success { background: color-mix(in srgb, var(--color-success) 12%, transparent); color: var(--color-success); }
+    .badge-warning { background: color-mix(in srgb, var(--color-warning) 14%, transparent); color: var(--color-warning); }
+    .badge-danger  { background: color-mix(in srgb, var(--color-danger) 12%, transparent);  color: var(--color-danger); }
+
+    .alert {
+      padding: var(--space-4) var(--space-5);
+      border-radius: var(--radius-md);
+      border: 1px solid;
+      margin-bottom: var(--space-4);
+    }
+    .alert-info    { background: color-mix(in srgb, var(--color-info) 8%, #fff);    border-color: var(--color-info);    color: var(--color-info); }
+    .alert-success { background: color-mix(in srgb, var(--color-success) 8%, #fff); border-color: var(--color-success); color: var(--color-success); }
+    .alert-warning { background: color-mix(in srgb, var(--color-warning) 8%, #fff); border-color: var(--color-warning); color: var(--color-warning); }
+    .alert-danger  { background: color-mix(in srgb, var(--color-danger) 8%, #fff);  border-color: var(--color-danger);  color: var(--color-danger); }
+
+    /* ============================================================
+       FORMS
+       ============================================================ */
+    .form-field { margin-bottom: var(--space-4); }
+    .form-field label {
+      display: block;
+      font-weight: var(--font-weight-medium);
+      font-size: var(--font-size-sm);
+      margin-bottom: var(--space-2);
+    }
+    .form-field input[type="text"],
+    .form-field input[type="email"],
+    .form-field input[type="password"],
+    .form-field input[type="number"],
+    .form-field input[type="search"],
+    .form-field select,
+    .form-field textarea {
+      width: 100%;
+      font: inherit;
+      padding: var(--space-3);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      color: var(--color-text);
+    }
+    .form-field input:focus,
+    .form-field select:focus,
+    .form-field textarea:focus {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 1px;
+      border-color: var(--color-primary);
+    }
+    .form-help { font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: var(--space-1); }
+    .form-check { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+    fieldset {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+    legend { font-weight: var(--font-weight-medium); padding: 0 var(--space-2); }
+
+    /* ============================================================
+       TABLES
+       ============================================================ */
+    .table-wrapper { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--color-surface);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    caption {
+      text-align: left;
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--space-2);
+    }
+    th, td {
+      text-align: left;
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--color-border);
+    }
+    thead th {
+      background: var(--color-surface-alt);
+      font-size: var(--font-size-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    tbody tr:hover { background: var(--color-surface-alt); }
+
+    /* ============================================================
+       MISC COMPONENTS
+       ============================================================ */
+    details {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-3);
+    }
+    summary {
+      cursor: pointer;
+      font-weight: var(--font-weight-medium);
+      padding: var(--space-4) var(--space-5);
+    }
+    details > div { padding: 0 var(--space-5) var(--space-4); color: var(--color-text-muted); }
+
+    figure { margin: 0 0 var(--space-4); }
+    figcaption {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      margin-top: var(--space-2);
+    }
+
+    /* ============================================================
+       HEADER / NAV / FOOTER (specimen chrome)
+       ============================================================ */
+    .site-header {
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .site-header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: var(--space-3);
+      padding-bottom: var(--space-3);
+    }
+    .site-nav ul {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-4);
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      font-size: var(--font-size-sm);
+    }
+    .hero {
+      background: linear-gradient(135deg, var(--color-primary), #7c3aed);
+      color: #fff;
+      padding: var(--space-10) 0;
+    }
+    .hero p { max-width: 42rem; opacity: 0.9; }
+    .site-footer {
+      background: #0f172a;
+      color: #94a3b8;
+      padding: var(--space-8) 0;
+      font-size: var(--font-size-sm);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= HEADER / NAV ================= -->
+  <header class="site-header">
+    <div class="container">
+      <strong>Design System Playground</strong>
+      <nav class="site-nav" aria-label="Specimen navigation">
+        <ul>
+          <li><a href="#typography">Typography</a></li>
+          <li><a href="#lists">Lists</a></li>
+          <li><a href="#images">Images</a></li>
+          <li><a href="#columns">Columns</a></li>
+          <li><a href="#cards">Cards</a></li>
+          <li><a href="#buttons">Buttons</a></li>
+          <li><a href="#forms">Forms</a></li>
+          <li><a href="#tables">Tables</a></li>
+          <li><a href="#misc">Misc</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ================= HERO ================= -->
+  <section class="hero">
+    <div class="container">
+      <h1>Design System Specimen</h1>
+      <p>A living test page containing the most common HTML elements. Edit the tokens in <code>:root</code> and watch your design system come to life across every component.</p>
+      <div class="btn-row">
+        <a class="btn btn-primary" href="#typography">Get started</a>
+        <a class="btn btn-outline" href="#cards" style="border-color:#fff;color:#fff;">View cards</a>
+      </div>
+    </div>
+  </section>
+
+  <main>
+
+    <!-- ================= TYPOGRAPHY ================= -->
+    <section id="typography" class="section">
+      <div class="container">
+        <span class="section-label">01 · Typography</span>
+
+        <h1>Heading level 1</h1>
+        <h2>Heading level 2</h2>
+        <h3>Heading level 3</h3>
+        <h4>Heading level 4</h4>
+        <h5>Heading level 5</h5>
+        <h6>Heading level 6</h6>
+
+        <hr>
+
+        <p class="lead" style="font-size: var(--font-size-xl); color: var(--color-text-muted);">
+          This is a lead paragraph — slightly larger and muted, used to introduce a section and set the reading rhythm.
+        </p>
+
+        <p>
+          A standard paragraph with <strong>bold text</strong>, <em>italic text</em>, an
+          <a href="#">inline link</a>, <mark>highlighted text</mark>, <small>small print</small>,
+          <del>deleted text</del>, <ins>inserted text</ins>, an abbreviation
+          <abbr title="HyperText Markup Language">HTML</abbr>, inline <code>code()</code>,
+          a keyboard shortcut <kbd>Ctrl</kbd> + <kbd>K</kbd>, subscript H<sub>2</sub>O and
+          superscript E = mc<sup>2</sup>.
+        </p>
+
+        <p>
+          A second paragraph to test vertical rhythm between paragraphs. Lorem ipsum dolor sit amet,
+          consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus posuere velit aliquet.
+          Donec ullamcorper nulla non metus auctor fringilla.
+        </p>
+
+        <blockquote>
+          <p>“Good design is as little design as possible. Less, but better — because it concentrates
+          on the essential aspects, and the products are not burdened with non-essentials.”</p>
+          <footer>— Dieter Rams, <cite>Ten Principles for Good Design</cite></footer>
+        </blockquote>
+
+        <pre><code>// Code block
+function greet(name) {
+  return `Hello, ${name}!`;
+}</code></pre>
+      </div>
+    </section>
+
+    <!-- ================= LISTS ================= -->
+    <section id="lists" class="section" style="background: var(--color-surface);">
+      <div class="container">
+        <span class="section-label">02 · Lists</span>
+        <div class="grid grid-3">
+          <div>
+            <h4>Unordered list</h4>
+            <ul>
+              <li>First item</li>
+              <li>Second item
+                <ul>
+                  <li>Nested item A</li>
+                  <li>Nested item B</li>
+                </ul>
+              </li>
+              <li>Third item</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Ordered list</h4>
+            <ol>
+              <li>Step one</li>
+              <li>Step two
+                <ol>
+                  <li>Sub-step 2.1</li>
+                  <li>Sub-step 2.2</li>
+                </ol>
+              </li>
+              <li>Step three</li>
+            </ol>
+          </div>
+          <div>
+            <h4>Definition list</h4>
+            <dl>
+              <dt><strong>Token</strong></dt>
+              <dd>A named design decision stored as a variable.</dd>
+              <dt><strong>Component</strong></dt>
+              <dd>A reusable UI pattern built from tokens.</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= IMAGES ================= -->
+    <section id="images" class="section">
+      <div class="container">
+        <span class="section-label">03 · Images</span>
+
+        <div class="grid grid-2">
+          <figure>
+            <!-- Replace placeholder URLs with your own assets -->
+            <img src="https://picsum.photos/seed/hero/1200/675" alt="Random landscape placeholder" width="1200" height="675">
+            <figcaption>Figure with caption — 16:9 responsive image inside a <code>&lt;figure&gt;</code> element.</figcaption>
+          </figure>
+          <figure>
+            <img src="https://picsum.photos/seed/square/800/800" alt="Random square placeholder" width="800" height="800" style="border-radius: var(--radius-lg);">
+            <figcaption>Rounded image via the <code>--radius-lg</code> token.</figcaption>
+          </figure>
+        </div>
+
+        <h4>Image grid</h4>
+        <div class="grid grid-4">
+          <img src="https://picsum.photos/seed/a/400/300" alt="Placeholder A" width="400" height="300" style="border-radius: var(--radius-md);">
+          <img src="https://picsum.photos/seed/b/400/300" alt="Placeholder B" width="400" height="300" style="border-radius: var(--radius-md);">
+          <img src="https://picsum.photos/seed/c/400/300" alt="Placeholder C" width="400" height="300" style="border-radius: var(--radius-md);">
+          <img src="https://picsum.photos/seed/d/400/300" alt="Placeholder D" width="400" height="300" style="border-radius: var(--radius-md);">
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= COLUMNS ================= -->
+    <section id="columns" class="section" style="background: var(--color-surface);">
+      <div class="container">
+        <span class="section-label">04 · Columns &amp; Layout</span>
+
+        <h3>Two-column grid</h3>
+        <div class="grid grid-2">
+          <p>Column one. Cras mattis consectetur purus sit amet fermentum. Vestibulum id ligula porta felis euismod semper. Aenean lacinia bibendum nulla sed consectetur.</p>
+          <p>Column two. Maecenas faucibus mollis interdum. Nullam quis risus eget urna mollis ornare vel eu leo. Duis mollis, est non commodo luctus, nisi erat porttitor ligula.</p>
+        </div>
+
+        <h3>Three-column grid</h3>
+        <div class="grid grid-3">
+          <p>Column A. Etiam porta sem malesuada magna mollis euismod.</p>
+          <p>Column B. Vivamus sagittis lacus vel augue laoreet rutrum.</p>
+          <p>Column C. Sed posuere consectetur est at lobortis.</p>
+        </div>
+
+        <h3>Flowing text columns (CSS multi-column)</h3>
+        <div class="text-columns">
+          <p>Text that flows automatically across three balanced columns, like a magazine layout. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent commodo cursus magna, vel scelerisque nisl consectetur et. Nullam id dolor id nibh ultricies vehicula ut id elit.</p>
+          <p>Donec id elit non mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus. Morbi leo risus, porta ac consectetur ac, vestibulum at eros.</p>
+          <p>Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CARDS ================= -->
+    <section id="cards" class="section">
+      <div class="container">
+        <span class="section-label">05 · Cards</span>
+
+        <div class="grid grid-3">
+          <!-- Media card -->
+          <article class="card">
+            <div class="card-media">
+              <img src="https://picsum.photos/seed/card1/600/338" alt="Card one placeholder" width="600" height="338">
+            </div>
+            <div class="card-body">
+              <span class="badge badge-primary">Featured</span>
+              <h4 class="card-title">Media card</h4>
+              <p class="card-text">A card with image, badge, title, body copy and an action. The workhorse of any design system.</p>
+              <a href="#" class="btn btn-primary btn-sm">Read more</a>
+            </div>
+          </article>
+
+          <!-- Text-only card -->
+          <article class="card">
+            <div class="card-body">
+              <h4 class="card-title">Text-only card</h4>
+              <p class="card-text">No media — just hierarchy, spacing and a quiet action in the footer.</p>
+            </div>
+            <div class="card-footer">
+              <span>Updated 2 days ago</span>
+              <a href="#">Details →</a>
+            </div>
+          </article>
+
+          <!-- Pricing-style card -->
+          <article class="card">
+            <div class="card-body">
+              <span class="badge badge-success">Pro</span>
+              <h4 class="card-title">$12 <small style="font-size: var(--font-size-sm); color: var(--color-text-muted);">/ month</small></h4>
+              <ul style="margin: 0; padding-left: var(--space-5); color: var(--color-text-muted);">
+                <li>Unlimited projects</li>
+                <li>Design tokens API</li>
+                <li>Priority support</li>
+              </ul>
+              <a href="#" class="btn btn-outline">Choose plan</a>
+            </div>
+          </article>
+        </div>
+
+        <!-- Horizontal card -->
+        <article class="card card-horizontal" style="margin-top: var(--space-5);">
+          <div class="card-media">
+            <img src="https://picsum.photos/seed/cardh/600/600" alt="Horizontal card placeholder" width="600" height="600">
+          </div>
+          <div class="card-body">
+            <span class="badge badge-warning">New</span>
+            <h4 class="card-title">Horizontal card</h4>
+            <p class="card-text">A media-left, content-right layout for article listings and search results. Stacks vertically on small screens.</p>
+            <div class="btn-row">
+              <a href="#" class="btn btn-primary btn-sm">Open</a>
+              <a href="#" class="btn btn-ghost btn-sm">Save for later</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ================= BUTTONS ================= -->
+    <section id="buttons" class="section" style="background: var(--color-surface);">
+      <div class="container">
+        <span class="section-label">06 · Buttons &amp; Links</span>
+
+        <h4>Variants</h4>
+        <div class="btn-row">
+          <button class="btn btn-primary">Primary</button>
+          <button class="btn btn-secondary">Secondary</button>
+          <button class="btn btn-outline">Outline</button>
+          <button class="btn btn-ghost">Ghost</button>
+          <button class="btn btn-primary" disabled>Disabled</button>
+        </div>
+
+        <h4 style="margin-top: var(--space-5);">Sizes</h4>
+        <div class="btn-row">
+          <button class="btn btn-primary btn-sm">Small</button>
+          <button class="btn btn-primary">Default</button>
+          <button class="btn btn-primary btn-lg">Large</button>
+        </div>
+
+        <h4 style="margin-top: var(--space-5);">Badges</h4>
+        <div class="btn-row">
+          <span class="badge badge-primary">Primary</span>
+          <span class="badge badge-success">Success</span>
+          <span class="badge badge-warning">Warning</span>
+          <span class="badge badge-danger">Danger</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= FORMS ================= -->
+    <section id="forms" class="section">
+      <div class="container">
+        <span class="section-label">07 · Forms</span>
+
+        <form action="#" method="post" style="max-width: 36rem;">
+          <div class="form-field">
+            <label for="f-name">Full name</label>
+            <input type="text" id="f-name" name="name" placeholder="Jane Doe" required>
+          </div>
+
+          <div class="form-field">
+            <label for="f-email">Email</label>
+            <input type="email" id="f-email" name="email" placeholder="jane@example.com" required>
+            <p class="form-help">We will never share your email.</p>
+          </div>
+
+          <div class="form-field">
+            <label for="f-plan">Plan</label>
+            <select id="f-plan" name="plan">
+              <option>Free</option>
+              <option>Pro</option>
+              <option>Enterprise</option>
+            </select>
+          </div>
+
+          <fieldset>
+            <legend>Notifications</legend>
+            <div class="form-check">
+              <input type="checkbox" id="f-news" name="news" checked>
+              <label for="f-news" style="margin: 0;">Product newsletter</label>
+            </div>
+            <div class="form-check">
+              <input type="radio" id="f-weekly" name="freq" checked>
+              <label for="f-weekly" style="margin: 0;">Weekly digest</label>
+            </div>
+            <div class="form-check">
+              <input type="radio" id="f-monthly" name="freq">
+              <label for="f-monthly" style="margin: 0;">Monthly digest</label>
+            </div>
+          </fieldset>
+
+          <div class="form-field">
+            <label for="f-bio">Short bio</label>
+            <textarea id="f-bio" name="bio" rows="4" placeholder="Tell us about yourself…"></textarea>
+          </div>
+
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary">Submit</button>
+            <button type="reset" class="btn btn-ghost">Reset</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ================= TABLES ================= -->
+    <section id="tables" class="section" style="background: var(--color-surface);">
+      <div class="container">
+        <span class="section-label">08 · Tables</span>
+
+        <div class="table-wrapper">
+          <table>
+            <caption>Design token inventory</caption>
+            <thead>
+              <tr>
+                <th scope="col">Token</th>
+                <th scope="col">Value</th>
+                <th scope="col">Usage</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>--color-primary</code></td>
+                <td>#2563eb</td>
+                <td>Buttons, links, focus rings</td>
+                <td><span class="badge badge-success">Stable</span></td>
+              </tr>
+              <tr>
+                <td><code>--font-size-base</code></td>
+                <td>1rem</td>
+                <td>Body copy</td>
+                <td><span class="badge badge-success">Stable</span></td>
+              </tr>
+              <tr>
+                <td><code>--radius-lg</code></td>
+                <td>0.75rem</td>
+                <td>Cards, dialogs</td>
+                <td><span class="badge badge-warning">Review</span></td>
+              </tr>
+              <tr>
+                <td><code>--shadow-lg</code></td>
+                <td>0 10px 24px …</td>
+                <td>Popovers, dropdowns</td>
+                <td><span class="badge badge-danger">Deprecated</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MISC ================= -->
+    <section id="misc" class="section">
+      <div class="container">
+        <span class="section-label">09 · Alerts, Accordion &amp; Misc</span>
+
+        <div class="alert alert-info"><strong>Info:</strong> Your tokens were saved successfully.</div>
+        <div class="alert alert-success"><strong>Success:</strong> The palette passed contrast checks.</div>
+        <div class="alert alert-warning"><strong>Warning:</strong> Two shades are nearly identical.</div>
+        <div class="alert alert-danger"><strong>Error:</strong> This component uses a deprecated token.</div>
+
+        <h4>Accordion (details / summary)</h4>
+        <details open>
+          <summary>What is a design token?</summary>
+          <div>The smallest piece of a design system: a named value for color, spacing, typography or radius.</div>
+        </details>
+        <details>
+          <summary>Why test on a specimen page?</summary>
+          <div>Because every element renders side by side, inconsistencies in scale, rhythm and contrast become obvious immediately.</div>
+        </details>
+
+        <hr>
+
+        <p><small>Footer microcopy · <a href="#">Terms</a> · <a href="#">Privacy</a></small></p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="site-footer">
+    <div class="container">
+      <p>Design System Playground — edit <code>:root</code> tokens and watch everything update.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

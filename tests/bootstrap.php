@@ -47,12 +47,6 @@ if ( ! function_exists( 'add_options_page' ) ) {
 	}
 }
 
-if ( ! function_exists( 'register_activation_hook' ) ) {
-	function register_activation_hook( $file, $callback ) {
-		$GLOBALS['playbrick_activation_hook'] = $callback;
-	}
-}
-
 if ( ! function_exists( 'untrailingslashit' ) ) {
 	function untrailingslashit( $string ) {
 		return rtrim( $string, '/\\' );
@@ -128,7 +122,6 @@ if ( ! function_exists( 'sanitize_title' ) ) {
 require_once PLAYBRICK_DIR . 'includes/enqueue-strategy.php';
 require_once PLAYBRICK_DIR . 'includes/scaffold.php';
 require_once PLAYBRICK_DIR . 'includes/bricks-source.php';
-require_once PLAYBRICK_DIR . 'includes/bricks-tokens-seed.php';
 require_once PLAYBRICK_DIR . 'includes/enqueue.php';
 require_once PLAYBRICK_DIR . 'includes/builder-panel.php';
 require_once PLAYBRICK_DIR . 'includes/admin.php';

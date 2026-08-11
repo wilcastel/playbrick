@@ -10,14 +10,13 @@
 
 defined('ABSPATH') || exit;
 
-if ( ! defined( 'PLAYBRICK_VERSION' ) ) define('PLAYBRICK_VERSION', '1.0.0');
-if ( ! defined( 'PLAYBRICK_DIR' ) )     define('PLAYBRICK_DIR',     plugin_dir_path(__FILE__));
-if ( ! defined( 'PLAYBRICK_URL' ) )     define('PLAYBRICK_URL',     plugin_dir_url(__FILE__));
+define('PLAYBRICK_VERSION', '1.0.0');
+define('PLAYBRICK_DIR',     plugin_dir_path(__FILE__));
+define('PLAYBRICK_URL',     plugin_dir_url(__FILE__));
 
 require_once PLAYBRICK_DIR . 'includes/enqueue-strategy.php';
 require_once PLAYBRICK_DIR . 'includes/scaffold.php';
 require_once PLAYBRICK_DIR . 'includes/bricks-source.php';
-require_once PLAYBRICK_DIR . 'includes/bricks-tokens-seed.php';
 require_once PLAYBRICK_DIR . 'includes/enqueue.php';
 require_once PLAYBRICK_DIR . 'includes/builder-panel.php';
 require_once PLAYBRICK_DIR . 'includes/admin.php';
