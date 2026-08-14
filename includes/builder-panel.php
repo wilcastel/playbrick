@@ -137,12 +137,12 @@ function playbrick_builder_panel_output() {
 			<div class="playbrick-css-col">
 				<div class="playbrick-css-label">Custom CSS (_cssCustom)</div>
 				<div id="playbrick-utilities-row">
-					<textarea id="playbrick-utilities-input" rows="1" autocomplete="off" spellcheck="false" placeholder="Tailwind utilities (auto @apply)…"></textarea>
+					<textarea id="playbrick-utilities-input" rows="1" autocomplete="off" spellcheck="false" placeholder="Tailwind utilities (element: add classes, global: @apply)…"></textarea>
 				</div>
 				<textarea id="playbrick-custom-css" spellcheck="false"></textarea>
 			</div>
 		</div>
-		<div id="playbrick-css-empty">Select a global class in Bricks to inspect and edit its CSS.</div>
+		<div id="playbrick-css-empty">Select a Bricks global class or active element to inspect and edit its CSS.</div>
 		<div id="playbrick-css-resize" title="Drag to resize"></div>
 		<div id="playbrick-css-autocomplete" role="listbox"></div>
 	</div>
@@ -183,6 +183,7 @@ function playbrick_builder_panel_output() {
 		var isEditing=false;
 		var isEditingUtilities=false;
 		var utilitiesWriteTimer=null;
+		var lastTargetKey='';
 
 		if(!panel||!generated||!custom) return;
 
@@ -231,12 +232,41 @@ function playbrick_builder_panel_output() {
 			try{var app=document.querySelector('[data-v-app]');return app&&app.__vue_app__&&app.__vue_app__.config.globalProperties.$_state||null;}catch(e){return null;}
 		}
 
-		function getActiveClass(){var state=getState();try{return state&&state.activeClass||null;}catch(e){return null;}}
+		function validElementId(id){return typeof id==='string'&&/^[A-Za-z0-9]{6}$/.test(id);}
+		function getActiveClass(){var state=getState();try{return state&&state.activeClass&&state.activeClass.id&&state.activeClass.name?state.activeClass:null;}catch(e){return null;}}
+		function getActiveElement(){
+			var state=getState();
+			if(!state) return null;
+			try{
+				var direct=state.activeElement;
+				if(direct&&validElementId(direct.id)) return direct;
+				var activeId=state.activeId;
+				if(!validElementId(activeId)) return null;
+				var content=state.content;
+				if(Array.isArray(content)) return content.filter(function(item){return item&&item.id===activeId;})[0]||null;
+				if(content&&typeof content==='object'&&content[activeId]) return content[activeId];
+			}catch(e){}
+			return null;
+		}
+		function getTarget(){
+			var cls=getActiveClass();
+			if(cls) return {mode:'class',id:cls.id,name:cls.name,settings:cls.settings||{},object:cls};
+			var element=getActiveElement();
+			if(element&&validElementId(element.id)) return {mode:'element',id:element.id,name:element.name||'',settings:element.settings||{},object:element};
+			return null;
+		}
 		function getBreakpoint(){var state=getState();try{return state&&state.breakpointActive||'desktop';}catch(e){return 'desktop';}}
 		function cssKey(){var bp=getBreakpoint();return !bp||bp==='desktop'?'_cssCustom':'_cssCustom:'+bp;}
 
 		function cleanClassName(name){return String(name||'').replace(/^\./,'').trim();}
-		function selectorFor(cls){return '.'+cleanClassName(cls.name||'');}
+		function selectorFor(target){
+			if(target&&target.mode==='element'){
+				// Standalone elements use #brxe-{id}; component context may expose a component marker.
+				var component=target.object&&(target.object.isComponent||target.object.componentId||target.object._componentId);
+				return (component?'.brxe-':'#brxe-')+target.id;
+			}
+			return '.'+cleanClassName(target&&target.name||'');
+		}
 		function indent(lines){return lines.map(function(line){return '  '+line;}).join('\n');}
 
 		function valueToCss(value){
@@ -553,11 +583,11 @@ function playbrick_builder_panel_output() {
 			return {decls:out.filter(function(v,i,a){return a.indexOf(v)===i;}),supported:supported.filter(function(v,i,a){return a.indexOf(v)===i;}),unsupported:unsupported.filter(function(v,i,a){return a.indexOf(v)===i;})};
 		}
 
-		function generatedCssFor(cls){
-			if(!cls||!cls.name) return '';
-			var result=declarationsFromSettings(cls.settings||{});
-			if(!result.decls.length) return selectorFor(cls)+' {\n  /* No supported visual controls detected yet. */\n}';
-			return selectorFor(cls)+' {\n'+indent(result.decls)+'\n}';
+		function generatedCssFor(target){
+			if(!target) return '';
+			var result=declarationsFromSettings(target.settings||{});
+			if(!result.decls.length) return selectorFor(target)+' {\n  /* No supported visual controls detected yet. */\n}';
+			return selectorFor(target)+' {\n'+indent(result.decls)+'\n}';
 		}
 
 		function declarationsOnlyFromCss(css){
@@ -587,15 +617,15 @@ function playbrick_builder_panel_output() {
 			}
 		}
 
-		function normalizeCustomCss(cls,value){
+		function normalizeCustomCss(target,value){
 			value=String(value||'').trim();
 			if(!value) return '';
 			if(value.indexOf('{')!==-1) return value;
-			return selectorFor(cls)+' {\n'+indent(value.split('\n').filter(Boolean))+'\n}';
+			return selectorFor(target)+' {\n'+indent(value.split('\n').filter(Boolean))+'\n}';
 		}
 
-		function applyPreview(cls,value){
-			var css=normalizeCustomCss(cls,value);
+		function applyPreview(target,value){
+			var css=normalizeCustomCss(target,value);
 			var style=document.getElementById('playbrick-custom-css-preview');
 			if(!style){style=document.createElement('style');style.id='playbrick-custom-css-preview';document.head.appendChild(style);}
 			style.textContent=css;
@@ -719,9 +749,9 @@ function playbrick_builder_panel_output() {
 			field.dispatchEvent(new Event('input',{bubbles:true}));
 		}
 
-		function parseCustomCss(cls,css){
+		function parseCustomCss(target,css){
 			css=String(css||'').replace(/\/\*[\s\S]*?\*\//g,'').trim();
-			var selector=selectorFor(cls);
+			var selector=selectorFor(target);
 			var decls=[];
 			var preserved=[];
 			var fallbackBlocks=[];
@@ -840,9 +870,9 @@ function playbrick_builder_panel_output() {
 			return false;
 		}
 
-		function rebuildCustomCss(cls,unmapped,preserved){
+		function rebuildCustomCss(target,unmapped,preserved){
 			var parts=[];
-			if(unmapped.length){parts.push(selectorFor(cls)+' {\n'+indent(unmapped.map(function(decl){return decl.prop+': '+decl.value+';';}))+'\n}');}
+			if(unmapped.length){parts.push(selectorFor(target)+' {\n'+indent(unmapped.map(function(decl){return decl.prop+': '+decl.value+';';}))+'\n}');}
 			return parts.concat(preserved||[]).join('\n\n');
 		}
 
@@ -870,40 +900,62 @@ function playbrick_builder_panel_output() {
 
 		function syncUtilitiesField(){
 			if(isEditingUtilities||!utilitiesInput) return;
-			utilitiesInput.value=extractUtilities(custom.value);
+			var target=getTarget();
+			utilitiesInput.value=target&&target.mode==='element'?normalizeUtilityList(target.settings&&target.settings._cssClasses||'').join(' '):extractUtilities(custom.value);
 			autosizeUtilities();
 		}
 
 		function sync(){
-			var cls=getActiveClass();
-			if(!cls||!cls.id||!cls.name){panel.classList.add('playbrick-no-class');currentClassId=null;title.textContent='PlayBrick CSS';statusHoldUntil=0;status.textContent='Select a Bricks global class';generated.textContent='';updateDiagnostics(null);if(!isEditing) custom.value='';syncUtilitiesField();return;}
+			var target=getTarget();
+			if(!target){panel.classList.add('playbrick-no-class');currentClassId=null;lastSignature='';lastTargetKey='';title.textContent='PlayBrick CSS';statusHoldUntil=0;status.textContent='Select a Bricks global class or active element';generated.textContent='';updateDiagnostics(null);if(!isEditing) custom.value='';syncUtilitiesField();return;}
 			panel.classList.remove('playbrick-no-class');
-			var settings=cls.settings||{};
+			var settings=target.settings||{};
 			var key=cssKey();
-			var sig=cls.id+'|'+getBreakpoint()+'|'+JSON.stringify(settings);
+			var targetKey=target.mode+'|'+target.id+'|'+getBreakpoint();
+			if(lastTargetKey&&lastTargetKey!==targetKey){isEditing=false;isEditingUtilities=false;hideAutocomplete();}
+			lastTargetKey=targetKey;
+			var sig=target.mode+'|'+target.id+'|'+getBreakpoint()+'|'+JSON.stringify(settings);
 			if(sig===lastSignature) return;
 			lastSignature=sig;
-			currentClassId=cls.id;
-			title.textContent='PlayBrick CSS – .'+cleanClassName(cls.name);
-			syncStatus('Breakpoint: '+getBreakpoint());
-			generated.textContent=generatedCssFor(cls);
-			updateDiagnostics(cls);
+			currentClassId=target.id;
+			title.textContent=target.mode==='element'?'PlayBrick CSS – '+selectorFor(target):'PlayBrick CSS – .'+cleanClassName(target.name);
+			syncStatus((target.mode==='element'?'Element '+selectorFor(target):'Breakpoint')+': '+getBreakpoint());
+			generated.textContent=generatedCssFor(target);
+			updateDiagnostics(target);
 			if(!isEditing) custom.value=settings[key]||'';
 			syncUtilitiesField();
-			applyPreview(cls,settings[key]||'');
+			applyPreview(target,settings[key]||'');
 		}
 
 		function writeCustom(){
-			var cls=getActiveClass();
-			if(!cls||!cls.id) return;
-			if(!cls.settings) cls.settings={};
-			cls.settings[cssKey()]=custom.value;
+			var target=getTarget();
+			if(!target) return;
+			if(!target.object.settings) target.object.settings={};
+			var value=target.mode==='element'?normalizeCustomCss(target,custom.value):custom.value;
+			target.object.settings[cssKey()]=value;
+			if(target.mode==='element'&&!isEditing) custom.value=value;
 			lastSignature='';
-			applyPreview(cls,custom.value);
+			applyPreview(target,value);
 			sync();
 		}
 
+		function normalizeUtilityList(value){return String(value||'').trim().split(/\s+/).filter(Boolean).filter(function(item,index,list){return list.indexOf(item)===index;});}
+		function writeElementUtilities(element,value){
+			if(!element) return '';
+			if(!element.settings||typeof element.settings!=='object') element.settings={};
+			var normalized=normalizeUtilityList(value).join(' ');
+			element.settings._cssClasses=normalized;
+			return normalized;
+		}
 		function writeUtilities(){
+			var target=getTarget();
+			if(!target) return;
+			if(target.mode==='element'){
+				writeElementUtilities(target.object,utilitiesInput.value);
+				setStatus('Utilities updated for '+selectorFor(target),2200);
+				lastSignature='';sync();
+				return;
+			}
 			var utilities=utilitiesInput.value.trim();
 			custom.value=utilities?upsertApplyLine(custom.value,utilities):removeApplyLine(custom.value);
 			writeCustom();
@@ -974,32 +1026,33 @@ function playbrick_builder_panel_output() {
 			copyText(copyDeclarationsBtn,text);
 		});
 		if(clearCustomBtn) clearCustomBtn.addEventListener('click',function(){
-			var cls=getActiveClass();
-			if(!cls||!cls.id) return;
-			if(!cls.settings) cls.settings={};
-			cls.settings[cssKey()]='';
+			var target=getTarget();
+			if(!target) return;
+			if(!target.object.settings) target.object.settings={};
+			target.object.settings[cssKey()]='';
+			if(target.mode==='element') target.object.settings._cssClasses='';
 			custom.value='';
 			isEditing=false;
 			lastSignature='';
-			applyPreview(cls,'');
-			setStatus('Custom CSS cleared for '+getBreakpoint(),2200);
+			applyPreview(target,'');
+			setStatus((target.mode==='element'?'Custom CSS and element classes cleared for '+selectorFor(target):'Custom CSS cleared for global class')+' at '+getBreakpoint(),2200);
 			sync();
 		});
 		applyVisualBtn.addEventListener('click',function(){
-			var cls=getActiveClass();
-			if(!cls||!cls.id) return;
-			if(!cls.settings) cls.settings={};
-			var parsed=parseCustomCss(cls,custom.value);
+			var target=getTarget();
+			if(!target) return;
+			if(!target.object.settings) target.object.settings={};
+			var parsed=parseCustomCss(target,custom.value);
 			var unmapped=[];
 			var mapped=0;
-			parsed.decls.forEach(function(decl){if(mapDeclaration(cls.settings,decl)) mapped++; else unmapped.push(decl);});
+			parsed.decls.forEach(function(decl){if(mapDeclaration(target.object.settings,decl)) mapped++; else unmapped.push(decl);});
 			if(!mapped){setStatus(/@apply\s+/.test(custom.value||'')?'Tailwind @apply stays in custom CSS - save Bricks and let watch rebuild':'No supported declarations to apply',3200);return;}
-			var remaining=rebuildCustomCss(cls,unmapped,parsed.preserved);
-			cls.settings[cssKey()]=remaining;
+			var remaining=rebuildCustomCss(target,unmapped,parsed.preserved);
+			target.object.settings[cssKey()]=remaining;
 			custom.value=remaining;
 			isEditing=false;
 			lastSignature='';
-			applyPreview(cls,remaining);
+			applyPreview(target,remaining);
 			setStatus('Applied '+mapped+' declaration'+(mapped===1?'':'s')+' to visual controls'+(remaining?' - unsupported kept in custom CSS':' - custom CSS cleared'),3200);
 			sync();
 		});

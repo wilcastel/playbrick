@@ -62,6 +62,10 @@ function playbrick_collect_bricks_tailwind_custom_css() {
 		$chunks   = array_merge( $chunks, playbrick_extract_tailwind_custom_css_from_settings( $settings, $selector ) );
 	}
 
+	foreach ( playbrick_get_bricks_content_rows() as $row ) {
+		$chunks = array_merge( $chunks, playbrick_extract_tailwind_custom_css_from_bricks_data( playbrick_maybe_unserialize_bricks_value( $row ) ) );
+	}
+
 	return trim( implode( "\n\n", array_filter( $chunks ) ) );
 }
 
@@ -77,27 +81,113 @@ function playbrick_extract_tailwind_custom_css_from_settings( array $settings, $
 	return $chunks;
 }
 
+function playbrick_extract_tailwind_custom_css_from_bricks_data( $data ) {
+	$chunks = [];
+
+	if ( ! is_array( $data ) ) return $chunks;
+
+	if ( isset( $data['id'], $data['settings'] ) && is_string( $data['id'] ) && preg_match( '/^[A-Za-z0-9]{6}$/', $data['id'] ) && is_array( $data['settings'] ) ) {
+		$chunks = array_merge( $chunks, playbrick_extract_tailwind_custom_css_from_settings( $data['settings'], '#brxe-' . $data['id'] ) );
+	}
+
+	foreach ( $data as $value ) {
+		$chunks = array_merge( $chunks, playbrick_extract_tailwind_custom_css_from_bricks_data( $value ) );
+	}
+
+	return $chunks;
+}
+
 function playbrick_normalize_tailwind_custom_css_block( $css, $selector, $source_key = '_cssCustom' ) {
 	$css = trim( (string) $css );
 	$css = str_replace( '%root%', $selector, $css );
 
 	if ( strpos( $css, '{' ) !== false ) {
-		return "/* {$source_key} */\n" . $css;
+		$normalized = "/* {$source_key} */\n" . $css;
+	} else {
+		$lines = array_values( array_filter( array_map( 'trim', preg_split( '/\R/', $css ) ) ) );
+		$lines = array_map(
+			function ( $line ) {
+				if ( $line !== '' && $line[0] === '@' && substr( $line, -1 ) !== ';' ) {
+					return $line . ';';
+				}
+
+				return $line;
+			},
+			$lines
+		);
+
+		$normalized = "/* {$source_key} */\n{$selector} {\n  " . implode( "\n  ", $lines ) . "\n}";
 	}
 
-	$lines = array_values( array_filter( array_map( 'trim', preg_split( '/\R/', $css ) ) ) );
-	$lines = array_map(
-		function ( $line ) {
-			if ( $line !== '' && $line[0] === '@' && substr( $line, -1 ) !== ';' ) {
-				return $line . ';';
+	return playbrick_wrap_tailwind_custom_css_breakpoint( $normalized, $source_key );
+}
+
+function playbrick_get_bricks_breakpoint_context() {
+	$defaults = [
+		'desktop'          => [ 'width' => 1279, 'base' => true ],
+		'tablet_portrait'  => [ 'width' => 991 ],
+		'mobile_landscape' => [ 'width' => 767 ],
+		'mobile_portrait'  => [ 'width' => 478 ],
+	];
+
+	if ( class_exists( '\Bricks\\Breakpoints' ) && method_exists( '\Bricks\\Breakpoints', 'get_breakpoints' ) ) {
+		try {
+			$breakpoints = \Bricks\Breakpoints::get_breakpoints();
+			$map         = [];
+			$base_key    = '';
+
+			foreach ( is_array( $breakpoints ) ? $breakpoints : [] as $breakpoint ) {
+				$key = isset( $breakpoint['key'] ) ? (string) $breakpoint['key'] : '';
+				if ( $key === '' || ! isset( $breakpoint['width'] ) || ! is_numeric( $breakpoint['width'] ) ) continue;
+
+				$map[ $key ] = [
+					'width' => (int) $breakpoint['width'],
+					'base'  => ! empty( $breakpoint['base'] ),
+				];
+
+				if ( ! empty( $breakpoint['base'] ) ) $base_key = $key;
 			}
 
-			return $line;
-		},
-		$lines
-	);
+			if ( ! empty( $map ) ) {
+				$mobile_first = property_exists( '\Bricks\\Breakpoints', 'is_mobile_first' ) ? (bool) \Bricks\Breakpoints::$is_mobile_first : false;
+				if ( $base_key === '' && isset( $map['desktop'] ) ) $base_key = 'desktop';
 
-	return "/* {$source_key} */\n{$selector} {\n  " . implode( "\n  ", $lines ) . "\n}";
+				return [
+					'breakpoints'  => $map,
+					'base_key'     => $base_key,
+					'mobile_first' => $mobile_first,
+				];
+			}
+		} catch ( \Throwable $error ) {
+			// Fall back to the default map when Bricks is unavailable or incomplete.
+		}
+	}
+
+	return [
+		'breakpoints'  => $defaults,
+		'base_key'     => 'desktop',
+		'mobile_first' => false,
+	];
+}
+
+function playbrick_wrap_tailwind_custom_css_breakpoint( $css, $source_key ) {
+	$breakpoint_key = '';
+	if ( preg_match( '/^_cssCustom:(.+)$/', (string) $source_key, $matches ) ) {
+		$breakpoint_key = trim( $matches[1] );
+	}
+
+	if ( $breakpoint_key === '' ) return $css;
+
+	$context = playbrick_get_bricks_breakpoint_context();
+	if ( ! isset( $context['breakpoints'][ $breakpoint_key ] ) ) {
+		return "/* Skipped unresolved Bricks breakpoint: {$source_key} */";
+	}
+
+	$breakpoint = $context['breakpoints'][ $breakpoint_key ];
+	if ( $breakpoint_key === $context['base_key'] || ! empty( $breakpoint['base'] ) ) return $css;
+
+	$direction = ! empty( $context['mobile_first'] ) ? 'min-width' : 'max-width';
+	return "@media ({$direction}: {$breakpoint['width']}px) {\n" . $css . "\n}";
 }
 
 function playbrick_extract_tailwind_apply_classes( $css ) {
@@ -239,6 +329,22 @@ function playbrick_bricks_theme_color_slug( array $color ) {
 	return sanitize_title( $id );
 }
 
+function playbrick_bricks_theme_color_fallback( array $color ) {
+	foreach ( [ 'light', 'hex' ] as $key ) {
+		$fallback = playbrick_bricks_global_variable_css_value(
+			[
+				'value' => $color[ $key ] ?? '',
+			]
+		);
+
+		if ( $fallback !== '' ) {
+			return $fallback;
+		}
+	}
+
+	return '';
+}
+
 function playbrick_collect_bricks_theme_colors( array $palette ) {
 	$colors = [];
 
@@ -256,12 +362,18 @@ function playbrick_collect_bricks_theme_colors( array $palette ) {
 			$base_slug = $slug;
 			$suffix    = 2;
 
-			while ( isset( $colors[ $slug ] ) && $colors[ $slug ] !== $css_var ) {
+			$fallback = playbrick_bricks_theme_color_fallback( $color );
+			$color_token = [
+				'css_var'  => $css_var,
+				'fallback' => $fallback,
+			];
+
+			while ( isset( $colors[ $slug ] ) && $colors[ $slug ] !== $color_token ) {
 				$slug = $base_slug . '-' . $suffix;
 				$suffix++;
 			}
 
-			$colors[ $slug ] = $css_var;
+			$colors[ $slug ] = $color_token;
 		}
 	}
 
@@ -313,7 +425,7 @@ function playbrick_collect_bricks_global_variable_theme_tokens( array $variables
 		playbrick_register_bricks_theme_token(
 			$tokens,
 			$token,
-			'--' . $token === $css_var ? $value : 'var(' . $css_var . ')'
+			'--' . $token === $css_var ? $value : 'var(' . $css_var . ', ' . $value . ')'
 		);
 	}
 
@@ -323,8 +435,14 @@ function playbrick_collect_bricks_global_variable_theme_tokens( array $variables
 function playbrick_collect_bricks_theme_tokens( array $palette, array $global_variables = [] ) {
 	$tokens = [];
 
-	foreach ( playbrick_collect_bricks_theme_colors( $palette ) as $slug => $css_var ) {
-		playbrick_register_bricks_theme_token( $tokens, 'color-' . $slug, 'var(' . $css_var . ')' );
+	foreach ( playbrick_collect_bricks_theme_colors( $palette ) as $slug => $color ) {
+		$value = 'var(' . $color['css_var'];
+
+		if ( $color['fallback'] !== '' ) {
+			$value .= ', ' . $color['fallback'];
+		}
+
+		playbrick_register_bricks_theme_token( $tokens, 'color-' . $slug, $value . ')' );
 	}
 
 	foreach ( playbrick_collect_bricks_global_variable_theme_tokens( $global_variables ) as $token => $css_var ) {
