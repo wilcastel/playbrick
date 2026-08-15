@@ -73,20 +73,24 @@ pnpm run build      # production → writes minified files to the output directo
 
 In Tailwind mode, each build first exports CSS classes stored in Bricks Builder to `.playbrick/bricks-sources.html` and `.playbrick/bricks-sources.txt`, plus global-class Custom CSS to `.playbrick/bricks-custom.css`. Bricks Style Manager variables and color palette tokens are exported to `.playbrick/bricks-theme.css` as Tailwind `@theme inline` tokens. Do not edit Bricks-generated files under `wp-content/uploads/bricks/css`; Bricks Style Manager is the source of truth, and PlayBrick mirrors those variables into Tailwind. For example, Bricks variables like `--space-m`, `--text-xl`, `--color-primary`, and `--card-radius` become Tailwind utilities such as `p-m`, `text-xl`, `bg-primary`, and `rounded-card` for use in `@apply`. Builds also write `.playbrick/tailwind-utilities.json` so the CSS Panel can autocomplete those project utilities. While `pnpm run watch` is running, PlayBrick also checks Bricks for class changes, rebuilds when generated sources change, and updates the loaded `dev.built.css` link in the browser and same-origin Bricks canvas iframes through `playbrick.reload.json`.
 
-### PlayBrick CSS panel MVP
+### PlayBrick CSS panel
 
-When Bricks Builder is open, PlayBrick adds a small CSS panel button to the builder header. The panel currently targets Bricks global classes only:
+When Bricks Builder is open, PlayBrick adds a small CSS panel button to the builder header. The panel supports both the active Bricks global class and the active Bricks element:
 
-| Area | Source | Editable |
-|------|--------|----------|
-| Generated CSS | Supported Bricks visual controls from `activeClass.settings` | No |
-| Custom CSS | `activeClass.settings._cssCustom` for the active breakpoint | Yes |
+| Target | Generated CSS | Editable |
+|--------|---------------|----------|
+| Active global class | Supported Bricks visual controls from `activeClass.settings` | Class Custom CSS for the active breakpoint |
+| Active element | Supported Bricks visual controls from the element settings | Direct `_cssClasses` utilities and element `_cssCustom` for the active breakpoint |
 
-The panel shows how many visual controls were translated and lists unsupported settings so the mapping can grow safely over time. The MVP intentionally keeps visual-control CSS and custom CSS separate. Do not duplicate generated visual styles into `_cssCustom`; that would create two competing sources of truth.
+The panel shows how many visual controls were translated and lists unsupported settings so the mapping can grow safely over time. It keeps visual-control CSS and Custom CSS separate. Do not duplicate generated visual styles into `_cssCustom`; that would create two competing sources of truth.
 
-Use **Apply to visual** to map simple custom CSS declarations back into Bricks visual controls. Supported declarations are moved into `activeClass.settings`; unsupported declarations remain in `_cssCustom`. The MVP supports common layout, spacing, typography, background, border, border radius, and box shadow declarations.
+Use **Apply to visual** to map simple custom CSS declarations back into the active target's Bricks visual controls. Supported declarations are moved into the target settings; unsupported declarations remain in `_cssCustom`. Supported mappings cover common layout, spacing, typography, background, border, border radius, and box shadow declarations.
 
-The Custom CSS editor includes lightweight autocomplete suggestions loaded from `assets/css-completions.json`, without requiring Monaco, CodeMirror, or a plugin build step.
+The Custom CSS editor includes lightweight autocomplete suggestions loaded from `assets/css-completions.json`, plus generated project utilities from `.playbrick/tailwind-utilities.json`, without requiring Monaco, CodeMirror, or a plugin build step.
+
+See the [PlayBrick user guide](docs/playbrick-user-guide.md) for the complete workflow, styling levels, token conventions, responsive behavior, and troubleshooting. See the [PlayBrick roadmap](docs/playbrick-roadmap.md) for future improvements and architectural guardrails.
+
+Languages: [English user guide](docs/playbrick-user-guide.md) · [Guía de usuario en español](docs/playbrick-user-guide.es.md) · [English roadmap](docs/playbrick-roadmap.md) · [Hoja de ruta en español](docs/playbrick-roadmap.es.md)
 
 ---
 
