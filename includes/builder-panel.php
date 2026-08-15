@@ -76,7 +76,7 @@ function playbrick_builder_panel_output() {
 	$json_encode     = function_exists('wp_json_encode') ? 'wp_json_encode' : 'json_encode';
 	?>
 	<style id="playbrick-builder-panel-styles">
-		#playbrick-css-panel{position:fixed;left:320px;right:320px;bottom:0;height:300px;min-height:180px;max-height:80vh;z-index:1000;background:#151b22;border-top:1px solid rgba(255,255,255,.12);box-shadow:0 -16px 40px rgba(0,0,0,.35);color:#d6deeb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;flex-direction:column}
+		#playbrick-css-panel{position:fixed;left:320px;right:320px;bottom:0;height:300px;min-height:180px;max-height:80vh;min-width:260px;z-index:100000;background:#151b22;border:1px solid rgba(51,153,255,.4);box-shadow:0 0 0 1px rgba(0,0,0,.4),0 -16px 40px rgba(0,0,0,.35);color:#d6deeb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;flex-direction:column}
 		#playbrick-css-panel.playbrick-hidden{display:none!important}
 		#playbrick-css-panel *{box-sizing:border-box}
 		#playbrick-css-resize{position:absolute;left:0;right:0;top:-5px;height:10px;cursor:ns-resize;z-index:1}
@@ -110,22 +110,37 @@ function playbrick_builder_panel_output() {
 		#playbrick-css-empty{position:absolute;inset:34px 0 0;display:none;align-items:center;justify-content:center;background:#151b22;color:#95a3b3;font-size:13px;text-align:center;padding:24px}
 		#playbrick-css-panel.playbrick-no-class #playbrick-css-empty{display:flex}
 		#playbrick-css-panel.playbrick-no-class #playbrick-css-body{visibility:hidden}
+		.playbrick-css-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+		.playbrick-css-resize-h{position:absolute;top:0;bottom:0;width:10px;cursor:ew-resize;z-index:1}
+		.playbrick-css-resize-h:after{content:"";position:absolute;top:50%;left:3px;width:3px;height:44px;margin-top:-22px;border-radius:999px;background:rgba(255,255,255,.22)}
+		#playbrick-css-resize-h-left{left:-5px}
+		#playbrick-css-resize-h-right{right:-5px}
+		#playbrick-css-panel.playbrick-narrow #playbrick-css-topbar{height:auto;flex-direction:column;align-items:stretch;padding:8px 10px}
+		#playbrick-css-panel.playbrick-narrow .playbrick-css-group{width:100%}
+		#playbrick-css-panel.playbrick-narrow #playbrick-css-status{margin-left:0}
+		#playbrick-css-panel.playbrick-narrow #playbrick-css-body{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
+		#playbrick-css-panel.playbrick-narrow .playbrick-css-col{border-right:0;border-bottom:1px solid rgba(255,255,255,.08)}
+		#playbrick-css-panel.playbrick-narrow .playbrick-css-col:last-child{border-bottom:0}
 	</style>
 	<div id="playbrick-css-panel" class="playbrick-hidden playbrick-no-class">
 		<div id="playbrick-css-topbar">
 			<span id="playbrick-css-title">PlayBrick CSS</span>
-			<span id="playbrick-css-meta">
-				<span class="playbrick-css-pill" id="playbrick-supported-count">0 visual</span>
-				<span class="playbrick-css-pill is-warn" id="playbrick-unsupported-count">0 unsupported</span>
+			<span class="playbrick-css-group playbrick-css-group-inspect">
+				<span id="playbrick-css-meta">
+					<span class="playbrick-css-pill" id="playbrick-supported-count">0 visual</span>
+					<span class="playbrick-css-pill is-warn" id="playbrick-unsupported-count">0 unsupported</span>
+				</span>
+				<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-copy" title="Copy generated CSS">📋</button>
+				<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-copy-declarations" title="Copy declarations only">📄</button>
+				<button type="button" class="playbrick-css-btn playbrick-css-btn-icon is-primary" id="playbrick-css-apply-visual" title="Apply custom CSS to visual controls">🪄</button>
 			</span>
-			<button type="button" class="playbrick-css-btn" id="playbrick-css-copy">Copy generated</button>
-			<button type="button" class="playbrick-css-btn" id="playbrick-css-copy-declarations">Copy declarations</button>
-			<button type="button" class="playbrick-css-btn is-primary" id="playbrick-css-apply-visual">Apply to visual</button>
-			<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-clear-custom" title="Clear custom">🧹</button>
-			<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-smaller" title="Smaller">−</button>
-			<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-bigger" title="Bigger">+</button>
-			<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-refresh" title="Refresh">↻</button>
-			<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-close" title="Close">×</button>
+			<span class="playbrick-css-group playbrick-css-group-general">
+				<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-clear-custom" title="Clear custom">🧹</button>
+				<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-smaller" title="Smaller">−</button>
+				<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-bigger" title="Bigger">+</button>
+				<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-refresh" title="Refresh">↻</button>
+				<button type="button" class="playbrick-css-btn playbrick-css-btn-icon" id="playbrick-css-close" title="Close">×</button>
+			</span>
 			<span id="playbrick-css-status">Select a Bricks global class</span>
 		</div>
 		<div id="playbrick-css-body">
@@ -143,7 +158,9 @@ function playbrick_builder_panel_output() {
 			</div>
 		</div>
 		<div id="playbrick-css-empty">Select a Bricks global class or active element to inspect and edit its CSS.</div>
-		<div id="playbrick-css-resize" title="Drag to resize"></div>
+		<div id="playbrick-css-resize" title="Drag to resize height"></div>
+		<div id="playbrick-css-resize-h-left" class="playbrick-css-resize-h" title="Drag to resize width"></div>
+		<div id="playbrick-css-resize-h-right" class="playbrick-css-resize-h" title="Drag to resize width"></div>
 		<div id="playbrick-css-autocomplete" role="listbox"></div>
 	</div>
 	<script type="application/json" id="playbrick-css-completions-data"><?php echo $json_encode($css_completions); ?></script>
@@ -170,6 +187,8 @@ function playbrick_builder_panel_output() {
 		var closeBtn=document.getElementById('playbrick-css-close');
 		var refreshBtn=document.getElementById('playbrick-css-refresh');
 		var resizeHandle=document.getElementById('playbrick-css-resize');
+		var resizeHandleLeft=document.getElementById('playbrick-css-resize-h-left');
+		var resizeHandleRight=document.getElementById('playbrick-css-resize-h-right');
 		var supportedCount=document.getElementById('playbrick-supported-count');
 		var unsupportedCount=document.getElementById('playbrick-unsupported-count');
 		var unsupportedEl=document.getElementById('playbrick-unsupported');
@@ -199,7 +218,6 @@ function playbrick_builder_panel_output() {
 			panel.style.height=height+'px';
 			try{window.localStorage.setItem('playbrickCssPanelHeight',String(height));}catch(e){}
 		}
-		try{setPanelHeight(window.localStorage.getItem('playbrickCssPanelHeight')||300);}catch(e){setPanelHeight(300);}
 		function setPanelPosition(left,top){
 			var width=parseInt(panel.style.width,10)||panel.offsetWidth||480;
 			var height=parseInt(panel.style.height,10)||panel.offsetHeight||300;
@@ -211,7 +229,8 @@ function playbrick_builder_panel_output() {
 			panel.style.bottom='auto';
 			try{window.localStorage.setItem('playbrickCssPanelPos',JSON.stringify({left:left,top:top,width:width}));}catch(e){}
 		}
-		(function restorePanelPosition(){
+		function updateNarrowState(){panel.classList.toggle('playbrick-narrow',(panel.offsetWidth||0)<480);}
+		function restorePanelPosition(){
 			var saved=null;
 			try{saved=JSON.parse(window.localStorage.getItem('playbrickCssPanelPos')||'null');}catch(e){saved=null;}
 			if(!saved||typeof saved.left!=='number'||typeof saved.top!=='number') return;
@@ -222,7 +241,11 @@ function playbrick_builder_panel_output() {
 			panel.style.top=clamp(saved.top,0,Math.max(0,window.innerHeight-height))+'px';
 			panel.style.right='auto';
 			panel.style.bottom='auto';
-		})();
+			updateNarrowState();
+		}
+		try{setPanelHeight(window.localStorage.getItem('playbrickCssPanelHeight')||300);}catch(e){setPanelHeight(300);}
+		restorePanelPosition();
+		updateNarrowState();
 		function setStatus(message,holdMs){status.textContent=message;statusHoldUntil=holdMs?Date.now()+holdMs:0;}
 		function syncStatus(message){if(Date.now()>statusHoldUntil) status.textContent=message;}
 		function readCompletions(){try{return completionsData?JSON.parse(completionsData.textContent||'{}'):{};}catch(e){return {};}}
@@ -999,6 +1022,30 @@ function playbrick_builder_panel_output() {
 			document.addEventListener('mousemove',move);
 			document.addEventListener('mouseup',up);
 		});
+		function beginWidthResize(handle,fromLeft){
+			if(!handle) return;
+			handle.addEventListener('mousedown',function(event){
+				event.preventDefault();
+				var rect=panel.getBoundingClientRect();
+				var startLeft=rect.left;
+				var startRight=rect.right;
+				var maxWidth=Math.max(320,window.innerWidth-40);
+				function move(moveEvent){
+					var width=fromLeft?(startRight-moveEvent.clientX):(moveEvent.clientX-startLeft);
+					width=clamp(width,260,maxWidth);
+					if(fromLeft) panel.style.left=(startRight-width)+'px';
+					panel.style.right='auto';
+					panel.style.width=width+'px';
+					updateNarrowState();
+					try{window.localStorage.setItem('playbrickCssPanelPos',JSON.stringify({left:panel.offsetLeft,top:panel.offsetTop,width:width}));}catch(e){}
+				}
+				function up(){document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);}
+				document.addEventListener('mousemove',move);
+				document.addEventListener('mouseup',up);
+			});
+		}
+		beginWidthResize(resizeHandleLeft,true);
+		beginWidthResize(resizeHandleRight,false);
 		if(topbar) topbar.addEventListener('mousedown',function(event){
 			if(event.target.closest&&event.target.closest('.playbrick-css-btn')) return;
 			if(panel.classList.contains('playbrick-hidden')) return;
