@@ -30,7 +30,11 @@ function playbrick_generate_bricks_tailwind_source( $settings = null ) {
 	$playground_path = $settings['playground_path'] ?? playbrick_default_playground_path();
 	$classes         = playbrick_collect_bricks_tailwind_classes();
 	$custom_css      = playbrick_collect_bricks_tailwind_custom_css();
-	$classes         = array_merge( $classes, playbrick_extract_tailwind_apply_classes( $custom_css ) );
+	$classes         = array_merge(
+		$classes,
+		playbrick_collect_bricks_global_variable_grid_utility_classes( playbrick_get_bricks_global_variables() ),
+		playbrick_extract_tailwind_apply_classes( $custom_css )
+	);
 	$theme_css       = playbrick_build_bricks_theme_css( playbrick_get_bricks_color_palette(), playbrick_get_bricks_global_variables() );
 	$path            = playbrick_write_bricks_tailwind_source( $playground_path, $classes, $custom_css, $theme_css );
 	$raw_path        = playbrick_bricks_tailwind_raw_source_path( $settings );
@@ -404,10 +408,37 @@ function playbrick_bricks_global_variable_theme_token( array $variable ) {
 	if ( $name === '' || preg_match( '/[^A-Za-z0-9_-]/', $name ) || preg_match( '/^[-]/', $name ) ) return '';
 
 	if ( preg_match( '/^space-([A-Za-z0-9_][A-Za-z0-9_-]*)$/', $name, $matches ) ) return 'spacing-' . $matches[1];
-	if ( preg_match( '/^(text|color|radius|shadow|leading|font)-[A-Za-z0-9_][A-Za-z0-9_-]*$/', $name ) ) return $name;
+	if ( preg_match( '/^(text|color|radius|shadow|leading|font|grid-template-columns|grid-template-rows)-[A-Za-z0-9_][A-Za-z0-9_-]*$/', $name ) ) return $name;
 	if ( preg_match( '/^([A-Za-z0-9_][A-Za-z0-9_-]*)-radius$/', $name, $matches ) ) return 'radius-' . $matches[1];
 
 	return '';
+}
+
+function playbrick_bricks_global_variable_grid_utility_class( array $variable ) {
+	$name = isset( $variable['name'] ) && is_string( $variable['name'] ) ? trim( $variable['name'] ) : '';
+
+	if ( preg_match( '/^grid-template-columns-([A-Za-z0-9_][A-Za-z0-9_-]*)$/', $name, $matches ) ) {
+		return 'grid-cols-' . $matches[1];
+	}
+
+	if ( preg_match( '/^grid-template-rows-([A-Za-z0-9_][A-Za-z0-9_-]*)$/', $name, $matches ) ) {
+		return 'grid-rows-' . $matches[1];
+	}
+
+	return '';
+}
+
+function playbrick_collect_bricks_global_variable_grid_utility_classes( array $variables ) {
+	$classes = [];
+
+	foreach ( $variables as $variable ) {
+		if ( ! is_array( $variable ) ) continue;
+
+		$class = playbrick_bricks_global_variable_grid_utility_class( $variable );
+		if ( $class !== '' ) $classes[] = $class;
+	}
+
+	return playbrick_normalize_class_list( $classes );
 }
 
 function playbrick_collect_bricks_global_variable_theme_tokens( array $variables ) {
@@ -422,11 +453,13 @@ function playbrick_collect_bricks_global_variable_theme_tokens( array $variables
 
 		if ( $token === '' || $css_var === '' || $value === '' ) continue;
 
-		playbrick_register_bricks_theme_token(
-			$tokens,
-			$token,
-			'--' . $token === $css_var ? $value : 'var(' . $css_var . ', ' . $value . ')'
-		);
+		// Grid namespaces use @theme inline so Tailwind emits utilities that retain
+		// the live Bricks variable instead of baking the current value into the CSS.
+		$token_value = preg_match( '/^grid-template-(columns|rows)-/', $token )
+			? 'var(' . $css_var . ')'
+			: ( '--' . $token === $css_var ? $value : 'var(' . $css_var . ', ' . $value . ')' );
+
+		playbrick_register_bricks_theme_token( $tokens, $token, $token_value );
 	}
 
 	return $tokens;
