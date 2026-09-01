@@ -178,6 +178,26 @@ class BricksSourceTest extends TestCase {
 		$this->assertStringContainsString( '--leading-normal: 1.5;', $css );
 	}
 
+	public function test_generates_grid_utilities_that_reference_bricks_variables(): void {
+		$variables = [
+			[ 'id' => 'columns1', 'name' => 'grid-template-columns-dashboard', 'value' => '16rem minmax(0, 1fr)' ],
+			[ 'id' => 'rows1', 'name' => 'grid-template-rows-layout', 'value' => 'auto minmax(0, 1fr) auto' ],
+			[ 'id' => 'invalid1', 'name' => 'grid-template-columns-', 'value' => '1fr' ],
+			[ 'id' => 'other1', 'name' => 'grid-template-areas-dashboard', 'value' => '"nav main"' ],
+		];
+
+		$classes = playbrick_collect_bricks_global_variable_grid_utility_classes( $variables );
+		$css     = playbrick_build_bricks_theme_css( [], $variables );
+		$playground = sys_get_temp_dir() . '/playbrick-bricks-source/playground';
+		$path = playbrick_write_bricks_tailwind_source( $playground, $classes, '', $css );
+
+		$this->assertSame( [ 'grid-cols-dashboard', 'grid-rows-layout' ], $classes );
+		$this->assertStringContainsString( '--grid-template-columns-dashboard: var(--grid-template-columns-dashboard);', $css );
+		$this->assertStringContainsString( '--grid-template-rows-layout: var(--grid-template-rows-layout);', $css );
+		$this->assertStringNotContainsString( 'grid-template-areas-dashboard', $css );
+		$this->assertStringContainsString( 'grid-cols-dashboard grid-rows-layout', file_get_contents( $path ) );
+	}
+
 	public function test_builds_theme_css_skipping_malformed_global_variables(): void {
 		$css = playbrick_build_bricks_theme_css(
 			[],
