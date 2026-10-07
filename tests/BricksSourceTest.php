@@ -53,6 +53,29 @@ class BricksSourceTest extends TestCase {
 		);
 	}
 
+	public function test_extracts_classes_from_raw_code_settings_like_svg_elements(): void {
+		$data = [
+			[
+				'name'     => 'svg',
+				'settings' => [
+					'source' => 'code',
+					'code'   => "<svg class=\"h-4 w-4 shrink-0\" viewBox=\"0 0 24 24\">\n  <path class='stroke-verde' d=\"M0 0\"></path>\n</svg>",
+				],
+			],
+			[
+				'name'     => 'code',
+				'settings' => [ 'code' => '<div class="lg:grid-cols-[600px_1fr]">x</div>' ],
+			],
+		];
+
+		$classes = playbrick_extract_classes_from_bricks_data( $data );
+
+		$this->assertSame(
+			[ 'h-4', 'lg:grid-cols-[600px_1fr]', 'shrink-0', 'stroke-verde', 'w-4' ],
+			$classes
+		);
+	}
+
 	public function test_write_bricks_tailwind_source_creates_generated_html(): void {
 		$playground = sys_get_temp_dir() . '/playbrick-bricks-source/playground';
 

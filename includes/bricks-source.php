@@ -530,11 +530,30 @@ function playbrick_extract_classes_from_bricks_data( $data, array $global_class_
 				$classes = array_merge( $classes, playbrick_extract_classes_from_bricks_attributes( $value ) );
 			}
 
+			// SVG (source: code) and Code elements keep their markup as a raw string,
+			// so their class attributes are invisible to the settings-based lookups above.
+			if ( $key === 'code' && is_string( $value ) ) {
+				$classes = array_merge( $classes, playbrick_extract_classes_from_markup( $value ) );
+				continue;
+			}
+
 			$classes = array_merge( $classes, playbrick_extract_classes_from_bricks_data( $value, $global_class_map ) );
 		}
 	}
 
 	return playbrick_normalize_class_list( $classes );
+}
+
+function playbrick_extract_classes_from_markup( $markup ) {
+	$classes = [];
+
+	if ( preg_match_all( '/\bclass\s*=\s*(["\'])(.*?)\1/is', $markup, $matches ) ) {
+		foreach ( $matches[2] as $value ) {
+			$classes = array_merge( $classes, preg_split( '/\s+/', $value ) );
+		}
+	}
+
+	return $classes;
 }
 
 function playbrick_extract_classes_from_bricks_attributes( array $attributes ) {
