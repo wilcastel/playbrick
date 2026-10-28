@@ -66,6 +66,11 @@ function playbrick_collect_bricks_tailwind_custom_css() {
 		$chunks = array_merge( $chunks, playbrick_extract_tailwind_custom_css_from_bricks_data( playbrick_maybe_unserialize_bricks_value( $row ) ) );
 	}
 
+	// Component elements render once per instance, so target them by class instead of a unique id.
+	foreach ( playbrick_get_bricks_component_elements() as $elements ) {
+		$chunks = array_merge( $chunks, playbrick_extract_tailwind_custom_css_from_bricks_data( $elements, '.brxe-' ) );
+	}
+
 	return trim( implode( "\n\n", array_filter( $chunks ) ) );
 }
 
@@ -81,17 +86,17 @@ function playbrick_extract_tailwind_custom_css_from_settings( array $settings, $
 	return $chunks;
 }
 
-function playbrick_extract_tailwind_custom_css_from_bricks_data( $data ) {
+function playbrick_extract_tailwind_custom_css_from_bricks_data( $data, $selector_prefix = '#brxe-' ) {
 	$chunks = [];
 
 	if ( ! is_array( $data ) ) return $chunks;
 
 	if ( isset( $data['id'], $data['settings'] ) && is_string( $data['id'] ) && preg_match( '/^[A-Za-z0-9]{6}$/', $data['id'] ) && is_array( $data['settings'] ) ) {
-		$chunks = array_merge( $chunks, playbrick_extract_tailwind_custom_css_from_settings( $data['settings'], '#brxe-' . $data['id'] ) );
+		$chunks = array_merge( $chunks, playbrick_extract_tailwind_custom_css_from_settings( $data['settings'], $selector_prefix . $data['id'] ) );
 	}
 
 	foreach ( $data as $value ) {
-		$chunks = array_merge( $chunks, playbrick_extract_tailwind_custom_css_from_bricks_data( $value ) );
+		$chunks = array_merge( $chunks, playbrick_extract_tailwind_custom_css_from_bricks_data( $value, $selector_prefix ) );
 	}
 
 	return $chunks;
@@ -219,7 +224,34 @@ function playbrick_collect_bricks_tailwind_classes() {
 		$classes = array_merge( $classes, playbrick_extract_classes_from_bricks_data( $data, $global_classes ) );
 	}
 
+	foreach ( playbrick_get_bricks_component_elements() as $elements ) {
+		$classes = array_merge( $classes, playbrick_extract_classes_from_bricks_data( $elements, $global_classes ) );
+	}
+
 	return playbrick_normalize_class_list( $classes );
+}
+
+/**
+ * Element trees of Bricks components, which live in an option instead of post meta.
+ *
+ * @return array[] One flat element list per component.
+ */
+function playbrick_get_bricks_component_elements() {
+	$option_name = defined( 'BRICKS_DB_COMPONENTS' ) ? BRICKS_DB_COMPONENTS : 'bricks_components';
+	$components  = get_option( $option_name, [] );
+	$trees       = [];
+
+	if ( ! is_array( $components ) ) {
+		return $trees;
+	}
+
+	foreach ( $components as $component ) {
+		if ( is_array( $component ) && ! empty( $component['elements'] ) && is_array( $component['elements'] ) ) {
+			$trees[] = $component['elements'];
+		}
+	}
+
+	return $trees;
 }
 
 function playbrick_get_bricks_global_class_map() {

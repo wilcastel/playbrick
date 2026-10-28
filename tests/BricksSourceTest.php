@@ -1,6 +1,7 @@
 <?php
 namespace PlayBrick\Tests;
 
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 class BricksSourceTest extends TestCase {
@@ -149,6 +150,66 @@ class BricksSourceTest extends TestCase {
 		$this->assertStringContainsString( '#brxe-abc123 {', $css[0] );
 		$this->assertStringContainsString( '@apply grid gap-5;', $css[0] );
 		$this->assertStringNotContainsString( 'hidden', $css[0] );
+	}
+
+	// Isolated: mocking get_option defines it globally, which changes function_exists() guards in later tests.
+	#[RunInSeparateProcess]
+	public function test_collects_classes_from_bricks_component_definitions(): void {
+		\Brain\Monkey\setUp();
+		\Brain\Monkey\Functions\when( 'get_option' )->alias(
+			function ( $name, $default = false ) {
+				if ( $name !== 'bricks_components' ) return $default;
+
+				return [
+					[
+						'id'       => 'cmp001',
+						'elements' => [
+							[ 'id' => 'cmp001', 'name' => 'div', 'parent' => 0, 'settings' => [ '_cssClasses' => 'relative w-full' ] ],
+							[ 'id' => 'btn001', 'name' => 'div', 'parent' => 'cmp001', 'settings' => [ '_cssClasses' => 'w-[236px] lg:mt-[48px]' ] ],
+						],
+					],
+					'not-a-component',
+				];
+			}
+		);
+
+		try {
+			$classes = playbrick_collect_bricks_tailwind_classes();
+		} finally {
+			\Brain\Monkey\tearDown();
+		}
+
+		$this->assertSame( [ 'lg:mt-[48px]', 'relative', 'w-[236px]', 'w-full' ], $classes );
+	}
+
+	#[RunInSeparateProcess]
+	public function test_collects_component_custom_css_with_instance_safe_class_selector(): void {
+		\Brain\Monkey\setUp();
+		\Brain\Monkey\Functions\when( 'get_option' )->alias(
+			function ( $name, $default = false ) {
+				if ( $name !== 'bricks_components' ) return $default;
+
+				return [
+					[
+						'id'       => 'cmp001',
+						'elements' => [
+							[ 'id' => 'cmp001', 'name' => 'div', 'parent' => 0, 'settings' => [ '_cssCustom' => '@apply grid gap-5;' ] ],
+						],
+					],
+				];
+			}
+		);
+
+		try {
+			$css = playbrick_collect_bricks_tailwind_custom_css();
+		} finally {
+			\Brain\Monkey\tearDown();
+		}
+
+		// Component elements render once per instance, so they must not be targeted by #brxe-{id}.
+		$this->assertStringContainsString( '.brxe-cmp001 {', $css );
+		$this->assertStringContainsString( '@apply grid gap-5;', $css );
+		$this->assertStringNotContainsString( '#brxe-cmp001', $css );
 	}
 
 	public function test_builds_theme_css_from_bricks_color_palette(): void {
